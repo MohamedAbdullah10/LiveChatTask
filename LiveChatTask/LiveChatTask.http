@@ -1,0 +1,6 @@
+@LiveChatTask_HostAddress = http://localhost:5274
+
+GET {{LiveChatTask_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
