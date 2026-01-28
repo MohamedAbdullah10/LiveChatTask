@@ -1,0 +1,107 @@
+@page
+@model LiveChatTask.Pages.User.LoginModel
+@{
+    ViewData["Title"] = "User Login";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-sm">
+                <div class="card-header text-center bg-primary text-white">
+                    <h4 class="mb-0">User Login</h4>
+                </div>
+                <div class="card-body">
+                    <div id="login-error" class="alert alert-danger d-none"></div>
+
+                    <form id="login-form" novalidate>
+                        <div class="mb-3">
+                            <label for="emailOrUserName" class="form-label">Email or Username</label>
+                            <input id="emailOrUserName" name="emailOrUserName" class="form-control" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input id="password" name="password" type="password" class="form-control" required />
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input id="rememberMe" name="rememberMe" type="checkbox" class="form-check-input" />
+                            <label for="rememberMe" class="form-check-label">Remember me</label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100" id="login-submit">
+                            Login
+                        </button>
+                    </form>
+
+                    <div class="mt-3 text-center">
+                        <span>Don't have an account?</span>
+                        <a asp-page="/User/Register">Register</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const form = document.getElementById('login-form');
+            const errorDiv = document.getElementById('login-error');
+            const submitBtn = document.getElementById('login-submit');
+
+            form.addEventListener('submit', async function (e) {
+                e.preventDefault();
+
+                errorDiv.classList.add('d-none');
+                errorDiv.innerHTML = '';
+
+                if (!form.checkValidity()) {
+                    errorDiv.classList.remove('d-none');
+                    errorDiv.innerHTML = 'Please fill in all required fields.';
+                    return;
+                }
+
+                const payload = {
+                    emailOrUserName: document.getElementById('emailOrUserName').value,
+                    password: document.getElementById('password').value,
+                    rememberMe: document.getElementById('rememberMe').checked,
+                    returnUrl: '@(Model.ReturnUrl ?? "/")'
+                };
+
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Signing in...';
+
+                try {
+                    const response = await fetch('/api/account/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload),
+                        credentials: 'include'
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        errorDiv.classList.remove('d-none');
+                        errorDiv.innerHTML = data.message || 'Login failed.';
+                    } else {
+                        const redirectUrl = data.redirectUrl || '/';
+                        window.location.href = redirectUrl;
+                    }
+                } catch (err) {
+                    errorDiv.classList.remove('d-none');
+                    errorDiv.innerHTML = 'An error occurred. Please try again.';
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Login';
+                }
+            });
+        })();
+    </script>
+}
+

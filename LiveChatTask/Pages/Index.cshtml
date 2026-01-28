@@ -1,0 +1,107 @@
+@page
+@model LiveChatTask.Pages.IndexModel
+@{
+    ViewData["Title"] = "Welcome to LiveChat";
+}
+
+<div class="row align-items-center py-5">
+    <div class="col-lg-6 mb-4 mb-lg-0">
+        <h1 class="display-5 fw-bold mb-3">LiveChat Support</h1>
+        <p class="lead text-muted mb-4">
+            Real-time support between your users and admins, with rich messaging, file sharing, and analytics.
+            This is your central hub for managing conversations.
+        </p>
+
+        <div class="d-flex flex-wrap gap-2 mb-4">
+            <a class="btn btn-primary btn-lg" asp-page="/User/Login">Login</a>
+            <a class="btn btn-outline-primary btn-lg" asp-page="/User/Register">Sign Up</a>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-12 col-md-6">
+                <div class="d-flex align-items-start">
+                    <span class="badge bg-primary rounded-pill me-3 mt-1">1</span>
+                    <div>
+                        <h5 class="mb-1">Real-time Chat</h5>
+                        <p class="small text-muted mb-0">
+                            Seamless communication between admins and users with live updates.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6">
+                <div class="d-flex align-items-start">
+                    <span class="badge bg-success rounded-pill me-3 mt-1">2</span>
+                    <div>
+                        <h5 class="mb-1">Rich Media</h5>
+                        <p class="small text-muted mb-0">
+                            Share images, documents, and voice notes directly in the conversation.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6">
+                <div class="d-flex align-items-start">
+                    <span class="badge bg-info rounded-pill me-3 mt-1">3</span>
+                    <div>
+                        <h5 class="mb-1">Smart Controls</h5>
+                        <p class="small text-muted mb-0">
+                            Configure message limits, idle timeouts, and automatic follow-up messages.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6">
+                <div class="d-flex align-items-start">
+                    <span class="badge bg-secondary rounded-pill me-3 mt-1">4</span>
+                    <div>
+                        <h5 class="mb-1">Admin Dashboard</h5>
+                        <p class="small text-muted mb-0">
+                            Monitor active users and manage multiple conversations at once.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card shadow-lg border-0">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Preview: Live Support Chat</h5>
+            </div>
+            <div class="card-body" style="min-height: 260px;">
+                <div class="d-flex flex-column gap-3" style="max-height: 220px; overflow-y: auto;">
+                    <div class="d-flex">
+                        <div class="bg-light border rounded-3 p-3">
+                            <div class="small text-muted mb-1">User · 10:02</div>
+                            <div>Hi, I need help with my order.</div>
+                            <div class="small text-muted mt-1">Sent</div>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <div class="bg-primary text-white rounded-3 p-3">
+                            <div class="small text-white-50 mb-1">Admin · 10:03</div>
+                            <div>Sure, I’m happy to help. Can you share your order ID?</div>
+                            <div class="small text-white-50 mt-1">Seen</div>
+                        </div>
+                    </div>
+                    <div class="d-flex">
+                        <div class="bg-light border rounded-3 p-3">
+                            <div class="small text-muted mb-1">User · 10:04</div>
+                            <div>It’s #LC-2026-01.</div>
+                            <div class="small text-muted mt-1">Sent</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-light">
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Type a message..." disabled>
+                    <button class="btn btn-primary" type="button" disabled>Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

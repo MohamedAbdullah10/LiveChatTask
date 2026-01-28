@@ -1,0 +1,97 @@
+@page
+@model LiveChatTask.Pages.User.ChatModel
+@{
+    ViewData["Title"] = "Chat with Support";
+}
+
+<div class="row justify-content-center mt-3">
+    <div class="col-12 col-lg-10 col-xl-8">
+        <div class="card shadow-sm h-100 d-flex flex-column" style="min-height: 420px;">
+            <!-- Header -->
+            <div class="card-header d-flex justify-content-between align-items-center bg-primary text-white">
+                <div>
+                    <h5 class="mb-0">Chat with Support</h5>
+                    <small class="text-white-50">We typically reply within a few minutes.</small>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-success">Online</span>
+                    <button class="btn btn-outline-light btn-sm" type="button" disabled>
+                        End Chat
+                    </button>
+                </div>
+            </div>
+
+            <!-- Messages area -->
+            <div class="card-body d-flex flex-column p-0">
+                <div class="flex-grow-1 p-3" style="overflow-y: auto; max-height: 400px;">
+                    <!-- Sample messages as placeholders -->
+
+                    <!-- User bubble -->
+                    <div class="d-flex mb-3">
+                        <div class="bg-primary text-white rounded-3 p-3 ms-auto" style="max-width: 80%;">
+                            <div class="small text-white-50 mb-1">You · 10:01</div>
+                            <div>Hi, I need some help with my account.</div>
+                            <div class="small text-white-50 mt-1">
+                                <span class="badge bg-light text-dark me-1">Sent</span>
+                                <span class="badge bg-outline-light border">Text</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Admin bubble -->
+                    <div class="d-flex mb-3">
+                        <div class="bg-light border rounded-3 p-3" style="max-width: 80%;">
+                            <div class="small text-muted mb-1">Admin · 10:02</div>
+                            <div>Hi! I’m here to help. Can you describe the issue you’re facing?</div>
+                            <div class="small text-muted mt-1">
+                                <span class="badge bg-success me-1">Seen</span>
+                                <span class="badge bg-outline-secondary border">Text</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Example attachment message -->
+                    <div class="d-flex mb-3">
+                        <div class="bg-primary text-white rounded-3 p-3 ms-auto" style="max-width: 80%;">
+                            <div class="small text-white-50 mb-1">You · 10:03</div>
+                            <div>
+                                <strong>Image:</strong> screenshot.png
+                            </div>
+                            <div class="small text-white-50 mt-1">
+                                <span class="badge bg-light text-dark me-1">Sent</span>
+                                <span class="badge bg-outline-light border">Image</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="text-center text-muted small mt-4 mb-0">
+                        This is a preview of the chat layout. Messages, files, and voice notes will appear here.
+                    </p>
+                </div>
+
+                <!-- Composer -->
+                <div class="border-top p-3 bg-light">
+                    <div class="mb-2 d-flex gap-2 flex-wrap">
+                        <button class="btn btn-outline-secondary btn-sm" type="button" disabled aria-label="Attach image">
+                            <span class="me-1">🖼</span> Image
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" type="button" disabled aria-label="Attach file">
+                            <span class="me-1">📎</span> File
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" type="button" disabled aria-label="Record voice message">
+                            <span class="me-1">🎤</span> Voice
+                        </button>
+                    </div>
+
+                    <div class="input-group">
+                        <textarea class="form-control" rows="1" placeholder="Type a message..." disabled></textarea>
+                        <button class="btn btn-primary" type="button" disabled>Send</button>
+                    </div>
+                    <div class="form-text small mt-1">
+                        Chat functionality will be enabled with real-time updates in the next step.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

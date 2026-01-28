@@ -1,0 +1,101 @@
+@page
+@model LiveChatTask.Pages.Admin.LoginModel
+@{
+    ViewData["Title"] = "Admin Login";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-sm">
+                <div class="card-header text-center bg-dark text-white">
+                    <h4 class="mb-0">Admin Login</h4>
+                </div>
+                <div class="card-body">
+                    <div id="admin-login-error" class="alert alert-danger d-none"></div>
+
+                    <form id="admin-login-form" novalidate>
+                        <div class="mb-3">
+                            <label for="adminEmailOrUserName" class="form-label">Email or Username</label>
+                            <input id="adminEmailOrUserName" class="form-control" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="adminPassword" class="form-label">Password</label>
+                            <input id="adminPassword" type="password" class="form-control" required />
+                        </div>
+
+                        <button type="submit" class="btn btn-dark w-100" id="admin-login-submit">
+                            Login
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const form = document.getElementById('admin-login-form');
+            const errorDiv = document.getElementById('admin-login-error');
+            const submitBtn = document.getElementById('admin-login-submit');
+
+            form.addEventListener('submit', async function (e) {
+                e.preventDefault();
+
+                errorDiv.classList.add('d-none');
+                errorDiv.innerHTML = '';
+
+                if (!form.checkValidity()) {
+                    errorDiv.classList.remove('d-none');
+                    errorDiv.innerHTML = 'Please fill in all required fields.';
+                    return;
+                }
+
+                const payload = {
+                    emailOrUserName: document.getElementById('adminEmailOrUserName').value,
+                    password: document.getElementById('adminPassword').value,
+                    rememberMe: true
+                };
+
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Signing in...';
+
+                try {
+                    const response = await fetch('/api/account/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload),
+                        credentials: 'include'
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        errorDiv.classList.remove('d-none');
+                        errorDiv.innerHTML = data.message || 'Login failed.';
+                    } else {
+                        const roles = data.roles || [];
+                        if (roles.includes('Admin')) {
+                            window.location.href = '/Admin/Index';
+                        } else {
+                            errorDiv.classList.remove('d-none');
+                            errorDiv.innerHTML = 'You are not authorized as an admin.';
+                        }
+                    }
+                } catch (err) {
+                    errorDiv.classList.remove('d-none');
+                    errorDiv.innerHTML = 'An error occurred. Please try again.';
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Login';
+                }
+            });
+        })();
+    </script>
+}
+

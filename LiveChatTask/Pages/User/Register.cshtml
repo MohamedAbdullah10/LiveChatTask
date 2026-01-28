@@ -1,0 +1,142 @@
+@page
+@model LiveChatTask.Pages.User.RegisterModel
+@{
+    ViewData["Title"] = "User Registration";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-sm">
+                <div class="card-header text-center bg-success text-white">
+                    <h4 class="mb-0">Create Account</h4>
+                </div>
+                <div class="card-body">
+                    <div id="register-error" class="alert alert-danger d-none"></div>
+                    <div id="register-success" class="alert alert-success d-none"></div>
+
+                    <form id="register-form" novalidate>
+                        <div class="mb-3">
+                            <label for="userName" class="form-label">Username</label>
+                            <input id="userName" name="userName" class="form-control" required minlength="3" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input id="email" name="email" type="email" class="form-control" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input id="password" name="password" type="password" class="form-control" required minlength="4" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="confirmPassword" class="form-label">Confirm Password</label>
+                            <input id="confirmPassword" name="confirmPassword" type="password" class="form-control" required />
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100" id="register-submit">
+                            Register
+                        </button>
+                    </form>
+
+                    <div class="mt-3 text-center">
+                        <span>Already have an account?</span>
+                        <a asp-page="/User/Login">Login</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const form = document.getElementById('register-form');
+            const errorDiv = document.getElementById('register-error');
+            const successDiv = document.getElementById('register-success');
+            const submitBtn = document.getElementById('register-submit');
+
+            form.addEventListener('submit', async function (e) {
+                e.preventDefault();
+
+                errorDiv.classList.add('d-none');
+                successDiv.classList.add('d-none');
+                errorDiv.innerHTML = '';
+                successDiv.innerHTML = '';
+
+                if (!form.checkValidity()) {
+                    errorDiv.classList.remove('d-none');
+                    errorDiv.innerHTML = 'Please fill in all required fields.';
+                    return;
+                }
+
+                const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                if (password !== confirmPassword) {
+                    errorDiv.classList.remove('d-none');
+                    errorDiv.innerHTML = 'Passwords do not match.';
+                    return;
+                }
+
+                const payload = {
+                    userName: document.getElementById('userName').value,
+                    email: document.getElementById('email').value,
+                    password,
+                    confirmPassword
+                };
+
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Registering...';
+
+                try {
+                    const response = await fetch('/api/account/register', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload),
+                        credentials: 'include'
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        errorDiv.classList.remove('d-none');
+
+                        if (data.errors) {
+                            if (Array.isArray(data.errors)) {
+                                errorDiv.innerHTML = data.errors.join('<br />');
+                            } else {
+                                const all = [];
+                                for (const key in data.errors) {
+                                    if (Object.prototype.hasOwnProperty.call(data.errors, key)) {
+                                        all.push(...data.errors[key]);
+                                    }
+                                }
+                                errorDiv.innerHTML = all.join('<br />');
+                            }
+                        } else {
+                            errorDiv.innerHTML = data.message || 'Registration failed.';
+                        }
+                    } else {
+                        successDiv.classList.remove('d-none');
+                        successDiv.innerHTML = data.message || 'Registration successful. Redirecting to login...';
+                        setTimeout(() => {
+                            window.location.href = '/User/Login';
+                        }, 1500);
+                    }
+                } catch (err) {
+                    errorDiv.classList.remove('d-none');
+                    errorDiv.innerHTML = 'An error occurred. Please try again.';
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Register';
+                }
+            });
+        })();
+    </script>
+}
+
