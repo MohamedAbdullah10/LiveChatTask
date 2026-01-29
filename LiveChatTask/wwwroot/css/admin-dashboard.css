@@ -421,6 +421,110 @@
     font-weight: 600;
 }
 
+.message-voice {
+    width: 100%;
+    max-width: 300px;
+    margin-top: 0.5rem;
+    border-radius: 8px;
+}
+
+.message-voice::-webkit-media-controls-panel {
+    background-color: rgba(255, 255, 255, 0.95);
+}
+
+.message.sent .message-voice::-webkit-media-controls-panel {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Voice Recording UI */
+.voice-record-btn {
+    background: var(--hover-bg);
+    border: 2px solid var(--border-color);
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
+
+.voice-record-btn:hover {
+    background: var(--danger-color);
+    color: white;
+    border-color: var(--danger-color);
+}
+
+.voice-recording-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 2px solid var(--danger-color);
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--danger-color);
+}
+
+.recording-dot {
+    width: 10px;
+    height: 10px;
+    background: var(--danger-color);
+    border-radius: 50%;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.5;
+        transform: scale(1.2);
+    }
+}
+
+#recordingTimer {
+    font-variant-numeric: tabular-nums;
+    min-width: 45px;
+}
+
+.voice-stop-btn,
+.voice-cancel-btn {
+    padding: 4px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.voice-stop-btn {
+    background: var(--success-color);
+    color: white;
+}
+
+.voice-stop-btn:hover {
+    background: #059669;
+}
+
+.voice-cancel-btn {
+    background: var(--text-light);
+    color: white;
+}
+
+.voice-cancel-btn:hover {
+    background: var(--text-secondary);
+}
+
 /* Message Input */
 .message-input-container {
     padding: 1.5rem 2rem;

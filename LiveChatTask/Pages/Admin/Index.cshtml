@@ -86,6 +86,13 @@
             </div>
             <div class="message-input-wrapper">
                 <label class="file-upload-btn">📎 <input type="file" id="fileInput" accept="image/*,.pdf,.doc,.docx,.txt" /></label>
+                <button id="voiceRecordBtn" class="voice-record-btn" type="button" title="Record voice message">🎤</button>
+                <div id="voiceRecordingIndicator" class="voice-recording-indicator d-none">
+                    <span class="recording-dot"></span>
+                    <span id="recordingTimer">00:00</span>
+                    <button id="voiceStopBtn" type="button" class="voice-stop-btn">Stop</button>
+                    <button id="voiceCancelBtn" type="button" class="voice-cancel-btn">Cancel</button>
+                </div>
                 <div class="input-wrapper">
                     <textarea id="messageInput" class="message-input" placeholder="Type your message..." rows="1" disabled></textarea>
                 </div>
@@ -121,6 +128,13 @@
     let uploadedFilePath = null;
     let uploadedFileType = null;
     
+    // Voice recording state
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let recordingStream = null;
+    let recordingTimer = null;
+    let recordingStartTime = null;
+    
     const tabs = document.getElementById('adminChatTabs');
     const panelsHost = document.getElementById('adminChatPanels');
     const messageInput = document.getElementById('messageInput');
@@ -131,6 +145,11 @@
     const filePreviewName = document.getElementById('filePreviewName');
     const filePreviewSize = document.getElementById('filePreviewSize');
     const removeFileBtn = document.getElementById('removeFileBtn');
+    const voiceRecordBtn = document.getElementById('voiceRecordBtn');
+    const voiceRecordingIndicator = document.getElementById('voiceRecordingIndicator');
+    const recordingTimerEl = document.getElementById('recordingTimer');
+    const voiceStopBtn = document.getElementById('voiceStopBtn');
+    const voiceCancelBtn = document.getElementById('voiceCancelBtn');
     const usersContainer = document.getElementById('adminUsersContainer');
     const usersLoading = document.getElementById('adminUsersLoading');
     const maxCharsInput = document.getElementById('adminMaxCharsInput');
@@ -266,6 +285,13 @@
             fileLink.appendChild(fileIcon);
             fileLink.appendChild(fileInfo);
             bubble.appendChild(fileLink);
+        } else if (message.messageType === 'Voice') {
+            const audio = document.createElement('audio');
+            audio.src = message.messageText;
+            audio.controls = true;
+            audio.className = 'message-voice';
+            audio.preload = 'metadata';
+            bubble.appendChild(audio);
         } else {
             const textP = document.createElement('p');
             textP.className = 'message-text';
@@ -591,6 +617,174 @@
         uploadedFilePath = null;
         uploadedFileType = null;
     }
+    
+    // Voice recording functions
+    function formatTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    
+    function updateRecordingTimer() {
+        if (recordingStartTime) {
+            const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+            recordingTimerEl.textContent = formatTime(elapsed);
+        }
+    }
+    
+    function stopRecordingTimer() {
+        if (recordingTimer) {
+            clearInterval(recordingTimer);
+            recordingTimer = null;
+        }
+        recordingStartTime = null;
+    }
+    
+    async function startVoiceRecording() {
+        try {
+            if (!activeChatSessionId) {
+                alert('Please select a chat first.');
+                return;
+            }
+            
+            // Request microphone permission
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            recordingStream = stream;
+            
+            // Determine MIME type (prefer webm with opus codec)
+            let mimeType = 'audio/webm;codecs=opus';
+            if (!MediaRecorder.isTypeSupported(mimeType)) {
+                mimeType = 'audio/webm';
+                if (!MediaRecorder.isTypeSupported(mimeType)) {
+                    mimeType = ''; // Use browser default
+                }
+            }
+            
+            // Create MediaRecorder
+            mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+            audioChunks = [];
+            
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    audioChunks.push(event.data);
+                }
+            };
+            
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+                await uploadVoiceRecording(audioBlob);
+                
+                // Stop all tracks
+                if (recordingStream) {
+                    recordingStream.getTracks().forEach(track => track.stop());
+                    recordingStream = null;
+                }
+            };
+            
+            mediaRecorder.onerror = (event) => {
+                console.error('MediaRecorder error:', event);
+                alert('Recording error occurred. Please try again.');
+                cancelVoiceRecording();
+            };
+            
+            // Start recording
+            mediaRecorder.start();
+            recordingStartTime = Date.now();
+            recordingTimer = setInterval(updateRecordingTimer, 1000);
+            
+            // Update UI
+            voiceRecordBtn.classList.add('d-none');
+            voiceRecordingIndicator.classList.remove('d-none');
+            messageInput.disabled = true;
+            sendButton.disabled = true;
+            
+        } catch (err) {
+            console.error('Error starting recording:', err);
+            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                alert('Microphone permission denied. Please allow microphone access and try again.');
+            } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                alert('No microphone found. Please connect a microphone and try again.');
+            } else {
+                alert('Failed to start recording: ' + err.message);
+            }
+        }
+    }
+    
+    function stopVoiceRecording() {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+        }
+        stopRecordingTimer();
+        
+        // Update UI
+        voiceRecordBtn.classList.remove('d-none');
+        voiceRecordingIndicator.classList.add('d-none');
+        messageInput.disabled = !activeChatSessionId;
+        sendButton.disabled = !activeChatSessionId;
+    }
+    
+    function cancelVoiceRecording() {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+        }
+        
+        // Stop all tracks
+        if (recordingStream) {
+            recordingStream.getTracks().forEach(track => track.stop());
+            recordingStream = null;
+        }
+        
+        audioChunks = [];
+        stopRecordingTimer();
+        
+        // Update UI
+        voiceRecordBtn.classList.remove('d-none');
+        voiceRecordingIndicator.classList.add('d-none');
+        messageInput.disabled = !activeChatSessionId;
+        sendButton.disabled = !activeChatSessionId;
+    }
+    
+    async function uploadVoiceRecording(audioBlob) {
+        try {
+            sendButton.disabled = true;
+            
+            const formData = new FormData();
+            // Determine file extension from MIME type
+            let extension = '.webm';
+            if (audioBlob.type.includes('ogg')) extension = '.ogg';
+            else if (audioBlob.type.includes('mp4') || audioBlob.type.includes('m4a')) extension = '.m4a';
+            else if (audioBlob.type.includes('wav')) extension = '.wav';
+            
+            const fileName = `recording${extension}`;
+            formData.append('file', audioBlob, fileName);
+            
+            const response = await fetch('/api/chat/upload-voice', {
+                method: 'POST',
+                body: formData,
+                credentials: 'include'
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Upload failed');
+            }
+            
+            const data = await response.json();
+            
+            // Send voice message via SignalR
+            await ChatClient.sendMessageTo(activeChatSessionId, data.filePath, 'Voice');
+            
+        } catch (err) {
+            alert('Voice upload failed: ' + err.message);
+        } finally {
+            sendButton.disabled = !activeChatSessionId;
+        }
+    }
+    
+    // Voice recording event listeners
+    voiceRecordBtn.addEventListener('click', startVoiceRecording);
+    voiceStopBtn.addEventListener('click', stopVoiceRecording);
+    voiceCancelBtn.addEventListener('click', cancelVoiceRecording);
     
     // Send message
     sendButton.addEventListener('click', async function() {

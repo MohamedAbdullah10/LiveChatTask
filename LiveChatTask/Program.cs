@@ -31,6 +31,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<IChatSettingsService, ChatSettingsService>();
 builder.Services.AddScoped<IPresenceService, PresenceService>();
+builder.Services.AddScoped<IFileUploadService, FileUploadService>();
 builder.Services.AddHostedService<PresenceMonitor>();
 
 // Configure authentication cookie paths for login/access denied redirects

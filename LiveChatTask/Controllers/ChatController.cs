@@ -1,6 +1,4 @@
 using System;
-using System.IO;
-using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using LiveChatTask.Application.Chat;
@@ -25,15 +23,18 @@ namespace LiveChatTask.Controllers
     {
         private readonly IChatService _chatService;
         private readonly IChatSettingsService _settingsService;
+        private readonly IFileUploadService _fileUploadService;
         private readonly IHubContext<ChatHub> _hubContext;
 
         public ChatController(
             IChatService chatService,
             IChatSettingsService settingsService,
+            IFileUploadService fileUploadService,
             IHubContext<ChatHub> hubContext)
         {
             _chatService = chatService;
             _settingsService = settingsService;
+            _fileUploadService = fileUploadService;
             _hubContext = hubContext;
         }
 
@@ -277,69 +278,58 @@ namespace LiveChatTask.Controllers
                     return Unauthorized();
                 }
 
-                if (file == null || file.Length == 0)
-                {
-                    return BadRequest(new { message = "No file provided" });
-                }
-
-                // Validate file size (10MB max)
-                const long maxFileSize = 10 * 1024 * 1024; // 10MB
-                if (file.Length > maxFileSize)
-                {
-                    return BadRequest(new { message = "File size exceeds 10MB limit" });
-                }
-
-                // Validate file extension
-                var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-                var allowedImageExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
-                var allowedDocExtensions = new[] { ".pdf", ".doc", ".docx", ".txt" };
-                
-                string fileType;
-                string subfolder;
-                
-                if (allowedImageExtensions.Contains(extension))
-                {
-                    fileType = "image";
-                    subfolder = "images";
-                }
-                else if (allowedDocExtensions.Contains(extension))
-                {
-                    fileType = "document";
-                    subfolder = "documents";
-                }
-                else
-                {
-                    return BadRequest(new { message = "File type not allowed. Allowed: images (jpg, png, gif, webp) and documents (pdf, docx, txt)" });
-                }
-
-                // Create uploads directory if it doesn't exist
-                var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", subfolder);
-                Directory.CreateDirectory(uploadsPath);
-
-                // Generate unique filename
-                var uniqueFileName = $"{Guid.NewGuid()}{extension}";
-                var filePath = Path.Combine(uploadsPath, uniqueFileName);
-
-                // Save file
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await file.CopyToAsync(stream);
-                }
-
-                // Return the web path (relative to wwwroot)
-                var webPath = $"/uploads/{subfolder}/{uniqueFileName}";
+                var result = await _fileUploadService.UploadFileAsync(file);
 
                 return Ok(new
                 {
-                    filePath = webPath,
-                    fileType,
-                    fileName = file.FileName,
-                    fileSize = file.Length
+                    filePath = result.FilePath,
+                    fileType = result.FileType,
+                    fileName = result.FileName,
+                    fileSize = result.FileSize
                 });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
             }
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = "File upload failed", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Uploads a voice recording (audio file) for use in chat messages.
+        /// POST: /api/chat/upload-voice
+        /// </summary>
+        [HttpPost("upload-voice")]
+        public async Task<IActionResult> UploadVoice([FromForm] IFormFile file)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    return Unauthorized();
+                }
+
+                var result = await _fileUploadService.UploadVoiceAsync(file);
+
+                return Ok(new
+                {
+                    filePath = result.FilePath,
+                    fileType = result.FileType,
+                    fileName = result.FileName,
+                    fileSize = result.FileSize
+                });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Voice upload failed", error = ex.Message });
             }
         }
     }
