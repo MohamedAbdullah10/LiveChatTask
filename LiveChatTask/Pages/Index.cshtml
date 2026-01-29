@@ -4,104 +4,157 @@
     ViewData["Title"] = "Welcome to LiveChat";
 }
 
-<div class="row align-items-center py-5">
-    <div class="col-lg-6 mb-4 mb-lg-0">
-        <h1 class="display-5 fw-bold mb-3">LiveChat Support</h1>
-        <p class="lead text-muted mb-4">
-            Real-time support between your users and admins, with rich messaging, file sharing, and analytics.
-            This is your central hub for managing conversations.
-        </p>
+<link rel="stylesheet" href="~/css/modern-home.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-        <div class="d-flex flex-wrap gap-2 mb-4">
-            <a class="btn btn-primary btn-lg" asp-page="/User/Login">Login</a>
-            <a class="btn btn-outline-primary btn-lg" asp-page="/User/Register">Sign Up</a>
-        </div>
+<style>
+    body {
+        font-family: 'Inter', sans-serif;
+        margin: 0;
+        padding: 0;
+    }
+</style>
 
-        <div class="row g-3">
-            <div class="col-12 col-md-6">
-                <div class="d-flex align-items-start">
-                    <span class="badge bg-primary rounded-pill me-3 mt-1">1</span>
-                    <div>
-                        <h5 class="mb-1">Real-time Chat</h5>
-                        <p class="small text-muted mb-0">
-                            Seamless communication between admins and users with live updates.
-                        </p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-12 col-md-6">
-                <div class="d-flex align-items-start">
-                    <span class="badge bg-success rounded-pill me-3 mt-1">2</span>
-                    <div>
-                        <h5 class="mb-1">Rich Media</h5>
-                        <p class="small text-muted mb-0">
-                            Share images, documents, and voice notes directly in the conversation.
-                        </p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-12 col-md-6">
-                <div class="d-flex align-items-start">
-                    <span class="badge bg-info rounded-pill me-3 mt-1">3</span>
-                    <div>
-                        <h5 class="mb-1">Smart Controls</h5>
-                        <p class="small text-muted mb-0">
-                            Configure message limits, idle timeouts, and automatic follow-up messages.
-                        </p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-12 col-md-6">
-                <div class="d-flex align-items-start">
-                    <span class="badge bg-secondary rounded-pill me-3 mt-1">4</span>
-                    <div>
-                        <h5 class="mb-1">Admin Dashboard</h5>
-                        <p class="small text-muted mb-0">
-                            Monitor active users and manage multiple conversations at once.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
+<div class="hero-section">
+    <!-- Animated Background Shapes -->
+    <div class="bg-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
     </div>
 
-    <div class="col-lg-6">
-        <div class="card shadow-lg border-0">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">Preview: Live Support Chat</h5>
-            </div>
-            <div class="card-body" style="min-height: 260px;">
-                <div class="d-flex flex-column gap-3" style="max-height: 220px; overflow-y: auto;">
-                    <div class="d-flex">
-                        <div class="bg-light border rounded-3 p-3">
-                            <div class="small text-muted mb-1">User · 10:02</div>
-                            <div>Hi, I need help with my order.</div>
-                            <div class="small text-muted mt-1">Sent</div>
+    <div class="container position-relative">
+        <div class="row align-items-center g-5">
+            <!-- Hero Content -->
+            <div class="col-lg-6 fade-in">
+                <div class="feature-badge">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/>
+                    </svg>
+                    Real-Time Support Platform
+                </div>
+                
+                <h1 class="hero-title">
+                    Connect & Support<br/>
+                    <span style="background: linear-gradient(135deg, #ffffff, rgba(255,255,255,0.7)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">In Real-Time</span>
+                </h1>
+                
+                <p class="hero-subtitle">
+                    A modern live chat platform built for seamless communication. 
+                    Powered by SignalR for instant messaging, with role-based access and real-time presence tracking.
+                </p>
+
+                <div class="d-flex flex-wrap gap-3 mt-4">
+                    <a asp-page="/User/Login" class="btn-modern btn-outline">
+                        Get Started
+                        <svg style="display: inline-block; margin-left: 8px; vertical-align: middle;" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                        </svg>
+                    </a>
+                </div>
+
+                <!-- Feature Highlights -->
+                <div class="row mt-5 g-3">
+                    <div class="col-6 col-md-4">
+                        <div class="glass-card text-center">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">⚡</div>
+                            <div style="color: white; font-weight: 600; font-size: 0.9rem;">Instant Messaging</div>
                         </div>
                     </div>
-                    <div class="d-flex justify-content-end">
-                        <div class="bg-primary text-white rounded-3 p-3">
-                            <div class="small text-white-50 mb-1">Admin · 10:03</div>
-                            <div>Sure, I’m happy to help. Can you share your order ID?</div>
-                            <div class="small text-white-50 mt-1">Seen</div>
+                    <div class="col-6 col-md-4">
+                        <div class="glass-card text-center">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">👥</div>
+                            <div style="color: white; font-weight: 600; font-size: 0.9rem;">Active Presence</div>
                         </div>
                     </div>
-                    <div class="d-flex">
-                        <div class="bg-light border rounded-3 p-3">
-                            <div class="small text-muted mb-1">User · 10:04</div>
-                            <div>It’s #LC-2026-01.</div>
-                            <div class="small text-muted mt-1">Sent</div>
+                    <div class="col-6 col-md-4">
+                        <div class="glass-card text-center">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">✓</div>
+                            <div style="color: white; font-weight: 600; font-size: 0.9rem;">Read Receipts</div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="card-footer bg-light">
-                <div class="input-group">
-                    <input type="text" class="form-control" placeholder="Type a message..." disabled>
-                    <button class="btn btn-primary" type="button" disabled>Send</button>
+
+            <!-- Portal Access Cards -->
+            <div class="col-lg-6">
+                <div class="row g-4">
+                    <!-- User Portal -->
+                    <div class="col-12 fade-in-delay-1">
+                        <div class="portal-card">
+                            <div class="portal-icon">
+                                <svg width="40" height="40" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            <h2 class="portal-title">User Portal</h2>
+                            <p class="portal-description">
+                                Start a conversation with our support team. Get help instantly with real-time messaging.
+                            </p>
+                            
+                            <ul class="feature-list mb-4">
+                                <li class="feature-item">
+                                    <div class="feature-icon">✓</div>
+                                    <span>Instant chat with support agents</span>
+                                </li>
+                                <li class="feature-item">
+                                    <div class="feature-icon">✓</div>
+                                    <span>Real-time message delivery</span>
+                                </li>
+                                <li class="feature-item">
+                                    <div class="feature-icon">✓</div>
+                                    <span>Seen/Sent status indicators</span>
+                                </li>
+                            </ul>
+
+                            <div class="d-flex gap-3">
+                                <a asp-page="/User/Login" class="btn-modern btn-user">
+                                    Login
+                                </a>
+                                <a asp-page="/User/Register" class="btn-modern btn-user" style="background: transparent; color: #667eea; box-shadow: 0 0 0 2px #667eea inset;">
+                                    Register
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Admin Portal -->
+                    <div class="col-12 fade-in-delay-2">
+                        <div class="portal-card admin-portal">
+                            <div class="portal-icon">
+                                <svg width="40" height="40" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            <h2 class="portal-title">Admin Portal</h2>
+                            <p class="portal-description">
+                                Manage multiple user conversations simultaneously with advanced dashboard controls.
+                            </p>
+                            
+                            <ul class="feature-list mb-4">
+                                <li class="feature-item">
+                                    <div class="feature-icon">✓</div>
+                                    <span>Multi-user chat management</span>
+                                </li>
+                                <li class="feature-item">
+                                    <div class="feature-icon">✓</div>
+                                    <span>Active user tracking</span>
+                                </li>
+                                <li class="feature-item">
+                                    <div class="feature-icon">✓</div>
+                                    <span>Configurable chat settings</span>
+                                </li>
+                            </ul>
+
+                            <a asp-page="/Admin/Login" class="btn-modern btn-admin">
+                                Admin Login
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-

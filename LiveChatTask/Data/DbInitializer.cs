@@ -1,5 +1,6 @@
 using LiveChatTask.Models;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace LiveChatTask.Data
 {
@@ -11,7 +12,8 @@ namespace LiveChatTask.Data
             RoleManager<IdentityRole> roleManager)
         {
             
-            context.Database.EnsureCreated();
+            // Ensure DB schema is up-to-date (required for settings/presence/chat tables).
+            await context.Database.MigrateAsync();
 
             // ========================
             // 1?? Roles
@@ -65,6 +67,21 @@ namespace LiveChatTask.Data
             }
 
             await context.SaveChangesAsync();
+
+            // ========================
+            // 4) Seed ChatSettings (singleton)
+            // ========================
+            var settings = await context.ChatSettings.FirstOrDefaultAsync();
+            if (settings == null)
+            {
+                context.ChatSettings.Add(new ChatSettings
+                {
+                    MaxUserMessageLength = 500,
+                    UpdatedAt = DateTime.UtcNow,
+                    UpdatedByAdminId = admin.Id
+                });
+                await context.SaveChangesAsync();
+            }
         }
     }
 }

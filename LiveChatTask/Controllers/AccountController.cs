@@ -111,6 +111,84 @@ namespace LiveChatTask.Controllers
         }
 
         /// <summary>
+        /// Logs a USER in (validates "User" role).
+        /// POST: /api/account/user-login
+        /// </summary>
+        [HttpPost("user-login")]
+        [AllowAnonymous]
+        public async Task<IActionResult> UserLogin([FromBody] LoginViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new
+                {
+                    message = "Validation failed",
+                    errors = ModelState.ToDictionary(
+                        kvp => kvp.Key,
+                        kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray())
+                });
+            }
+
+            var signInResult = await _authService.UserPasswordSignInAsync(
+                model.EmailOrUserName,
+                model.Password,
+                model.RememberMe);
+
+            if (!signInResult.Succeeded)
+            {
+                return Unauthorized(new { message = "Invalid login attempt or you are not authorized as a user" });
+            }
+
+            var user = await _authService.FindByEmailOrUserNameAsync(model.EmailOrUserName);
+            
+            return Ok(new
+            {
+                message = "Login successful",
+                userName = user?.UserName,
+                redirectUrl = "/User/Chat"
+            });
+        }
+
+        /// <summary>
+        /// Logs an ADMIN in (validates "Admin" role).
+        /// POST: /api/account/admin-login
+        /// </summary>
+        [HttpPost("admin-login")]
+        [AllowAnonymous]
+        public async Task<IActionResult> AdminLogin([FromBody] LoginViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new
+                {
+                    message = "Validation failed",
+                    errors = ModelState.ToDictionary(
+                        kvp => kvp.Key,
+                        kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage).ToArray())
+                });
+            }
+
+            var signInResult = await _authService.AdminPasswordSignInAsync(
+                model.EmailOrUserName,
+                model.Password,
+                model.RememberMe);
+
+            if (!signInResult.Succeeded)
+            {
+                return Unauthorized(new { message = "Invalid login attempt or you are not authorized as an admin" });
+            }
+
+            var user = await _authService.FindByEmailOrUserNameAsync(model.EmailOrUserName);
+            
+            return Ok(new
+            {
+                message = "Login successful",
+                userName = user?.UserName,
+                redirectUrl = "/Admin/Index"
+            });
+        }
+
+        /// <summary>
         /// Logs the current user out.
         /// POST: /api/account/logout
         /// </summary>

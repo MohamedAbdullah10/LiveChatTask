@@ -4,6 +4,9 @@
     {
         public int Id { get; set; }
 
+        // Stable key used by the client as chatSessionId and by SignalR as the group name
+        public string SessionKey { get; set; } = string.Empty;
+
         // The User (client) in this chat
         public string UserId { get; set; }
         public ApplicationUser User { get; set; }

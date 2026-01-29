@@ -4,94 +4,422 @@
     ViewData["Title"] = "Chat with Support";
 }
 
-<div class="row justify-content-center mt-3">
-    <div class="col-12 col-lg-10 col-xl-8">
-        <div class="card shadow-sm h-100 d-flex flex-column" style="min-height: 420px;">
-            <!-- Header -->
-            <div class="card-header d-flex justify-content-between align-items-center bg-primary text-white">
-                <div>
-                    <h5 class="mb-0">Chat with Support</h5>
-                    <small class="text-white-50">We typically reply within a few minutes.</small>
-                </div>
-                <div class="d-flex align-items-center gap-2">
-                    <span class="badge bg-success">Online</span>
-                    <button class="btn btn-outline-light btn-sm" type="button" disabled>
-                        End Chat
-                    </button>
+<link rel="stylesheet" href="~/css/user-chat.css" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+    body {
+        font-family: 'Inter', sans-serif;
+        margin: 0;
+    }
+</style>
+
+<div class="chat-container">
+    <!-- Header -->
+    <div class="chat-header">
+        <div class="chat-header-left">
+            <div>
+                <h1>💬 Support Chat</h1>
+                <div class="chat-subtitle">We're here to help you</div>
+            </div>
+        </div>
+        <div class="chat-header-actions">
+            <form method="post" asp-page-handler="Logout">
+                <button type="submit" class="header-btn">Logout</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="messages-wrapper" id="messagesWrapper">
+        <div class="messages-list" id="messagesList">
+            <div class="empty-chat-state">
+                <div class="icon">💬</div>
+                <h3>Start a Conversation</h3>
+                <p>Send a message to connect with our support team. We typically respond within a few minutes.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message Input -->
+    <div class="message-input-area">
+        <div class="input-container">
+            <div id="filePreviewArea" class="file-preview-area d-none">
+                <div class="file-preview">
+                    <img id="filePreviewImage" src="" alt="Preview" class="d-none" />
+                    <div class="file-preview-info">
+                        <strong id="filePreviewName"></strong>
+                        <small id="filePreviewSize"></small>
+                    </div>
+                    <button type="button" class="remove-file-btn" id="removeFileBtn">✕</button>
                 </div>
             </div>
-
-            <!-- Messages area -->
-            <div class="card-body d-flex flex-column p-0">
-                <div class="flex-grow-1 p-3" style="overflow-y: auto; max-height: 400px;">
-                    <!-- Sample messages as placeholders -->
-
-                    <!-- User bubble -->
-                    <div class="d-flex mb-3">
-                        <div class="bg-primary text-white rounded-3 p-3 ms-auto" style="max-width: 80%;">
-                            <div class="small text-white-50 mb-1">You · 10:01</div>
-                            <div>Hi, I need some help with my account.</div>
-                            <div class="small text-white-50 mt-1">
-                                <span class="badge bg-light text-dark me-1">Sent</span>
-                                <span class="badge bg-outline-light border">Text</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Admin bubble -->
-                    <div class="d-flex mb-3">
-                        <div class="bg-light border rounded-3 p-3" style="max-width: 80%;">
-                            <div class="small text-muted mb-1">Admin · 10:02</div>
-                            <div>Hi! I’m here to help. Can you describe the issue you’re facing?</div>
-                            <div class="small text-muted mt-1">
-                                <span class="badge bg-success me-1">Seen</span>
-                                <span class="badge bg-outline-secondary border">Text</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Example attachment message -->
-                    <div class="d-flex mb-3">
-                        <div class="bg-primary text-white rounded-3 p-3 ms-auto" style="max-width: 80%;">
-                            <div class="small text-white-50 mb-1">You · 10:03</div>
-                            <div>
-                                <strong>Image:</strong> screenshot.png
-                            </div>
-                            <div class="small text-white-50 mt-1">
-                                <span class="badge bg-light text-dark me-1">Sent</span>
-                                <span class="badge bg-outline-light border">Image</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <p class="text-center text-muted small mt-4 mb-0">
-                        This is a preview of the chat layout. Messages, files, and voice notes will appear here.
-                    </p>
+            
+            <div class="input-wrapper">
+                <label class="file-upload-label">
+                    📎
+                    <input type="file" id="fileInput" accept="image/*,.pdf,.doc,.docx,.txt" />
+                </label>
+                
+                <div class="text-input-wrapper">
+                    <textarea 
+                        id="messageInput" 
+                        class="message-input" 
+                        placeholder="Type a message..."
+                        rows="1"></textarea>
                 </div>
-
-                <!-- Composer -->
-                <div class="border-top p-3 bg-light">
-                    <div class="mb-2 d-flex gap-2 flex-wrap">
-                        <button class="btn btn-outline-secondary btn-sm" type="button" disabled aria-label="Attach image">
-                            <span class="me-1">🖼</span> Image
-                        </button>
-                        <button class="btn btn-outline-secondary btn-sm" type="button" disabled aria-label="Attach file">
-                            <span class="me-1">📎</span> File
-                        </button>
-                        <button class="btn btn-outline-secondary btn-sm" type="button" disabled aria-label="Record voice message">
-                            <span class="me-1">🎤</span> Voice
-                        </button>
-                    </div>
-
-                    <div class="input-group">
-                        <textarea class="form-control" rows="1" placeholder="Type a message..." disabled></textarea>
-                        <button class="btn btn-primary" type="button" disabled>Send</button>
-                    </div>
-                    <div class="form-text small mt-1">
-                        Chat functionality will be enabled with real-time updates in the next step.
-                    </div>
-                </div>
+                
+                <button id="sendBtn" class="send-btn" type="button">
+                    ✈️
+                </button>
             </div>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js" crossorigin="anonymous"></script>
+    <script src="~/js/chat.js"></script>
+    <script>
+        (function() {
+            let chatSessionId = null;
+            let uploadedFilePath = null;
+            let uploadedFileType = null;
+            let heartbeatTimer = null;
+            
+            const messagesList = document.getElementById('messagesList');
+            const messageInput = document.getElementById('messageInput');
+            const sendBtn = document.getElementById('sendBtn');
+            const fileInput = document.getElementById('fileInput');
+            const filePreviewArea = document.getElementById('filePreviewArea');
+            const filePreviewImage = document.getElementById('filePreviewImage');
+            const filePreviewName = document.getElementById('filePreviewName');
+            const filePreviewSize = document.getElementById('filePreviewSize');
+            const removeFileBtn = document.getElementById('removeFileBtn');
+            const messagesWrapper = document.getElementById('messagesWrapper');
+            
+            function formatFileSize(bytes) {
+                if (bytes < 1024) return bytes + ' B';
+                if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+                return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+            }
+
+            async function sendHeartbeat() {
+                try {
+                    await fetch('/api/presence/heartbeat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({}), // body is optional; server uses User from claims
+                        credentials: 'include'
+                    });
+                } catch {
+                    // swallow errors; presence is best-effort
+                }
+            }
+
+            async function markMessagesAsSeen() {
+                if (!chatSessionId) return;
+                try {
+                    await fetch('/api/chat/mark-seen', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ chatSessionId }),
+                        credentials: 'include'
+                    });
+                } catch { }
+            }
+            
+            function renderMessage(message) {
+                const isUser = message.role === 'User';
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${isUser ? 'user-message' : 'admin-message'}`;
+                messageDiv.setAttribute('data-message-id', message.messageId || '');
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'message-content';
+                
+                if (!isUser) {
+                    const senderName = document.createElement('div');
+                    senderName.className = 'sender-name';
+                    senderName.textContent = 'Support Team';
+                    contentDiv.appendChild(senderName);
+                }
+                
+                const bubble = document.createElement('div');
+                bubble.className = 'message-bubble';
+                
+                // Handle different message types
+                if (message.messageType === 'Image') {
+                    const img = document.createElement('img');
+                    img.src = message.messageText;
+                    img.className = 'message-image';
+                    img.alt = 'Shared image';
+                    img.onclick = () => window.open(message.messageText, '_blank');
+                    bubble.appendChild(img);
+                } else if (message.messageType === 'File') {
+                    const fileLink = document.createElement('a');
+                    fileLink.href = message.messageText;
+                    fileLink.className = 'message-file';
+                    fileLink.target = '_blank';
+                    fileLink.download = '';
+                    
+                    const fileIcon = document.createElement('div');
+                    fileIcon.className = 'file-icon';
+                    fileIcon.textContent = '📄';
+                    
+                    const fileInfo = document.createElement('div');
+                    fileInfo.className = 'file-info';
+                    
+                    const fileName = document.createElement('div');
+                    fileName.className = 'file-name';
+                    fileName.textContent = message.messageText.split('/').pop();
+                    
+                    const fileSize = document.createElement('div');
+                    fileSize.className = 'file-size';
+                    fileSize.textContent = 'Click to download';
+                    
+                    fileInfo.appendChild(fileName);
+                    fileInfo.appendChild(fileSize);
+                    fileLink.appendChild(fileIcon);
+                    fileLink.appendChild(fileInfo);
+                    bubble.appendChild(fileLink);
+                } else {
+                    const textP = document.createElement('p');
+                    textP.className = 'message-text';
+                    textP.textContent = message.messageText;
+                    bubble.appendChild(textP);
+                }
+                
+                const meta = document.createElement('div');
+                meta.className = 'message-meta';
+                const time = new Date(message.sentAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                let metaHTML = `<span>${time}</span>`;
+                // Only show Sent/Seen status for user's own messages (not admin messages)
+                if (isUser) {
+                    const statusText = message.status || 'Sent';
+                    const statusIcon = statusText === 'Seen' ? '✓✓' : '✓';
+                    metaHTML += ` · <span class="message-status" data-message-id="${message.messageId || ''}">${statusIcon} ${statusText}</span>`;
+                }
+                meta.innerHTML = metaHTML;
+                
+                contentDiv.appendChild(bubble);
+                contentDiv.appendChild(meta);
+                messageDiv.appendChild(contentDiv);
+                
+                // Remove empty state if exists
+                const emptyState = messagesList.querySelector('.empty-chat-state');
+                if (emptyState) {
+                    emptyState.remove();
+}
+                
+                messagesList.appendChild(messageDiv);
+                scrollToBottom();
+                
+                return messageDiv;
+            }
+            
+            function scrollToBottom() {
+                messagesWrapper.scrollTop = messagesWrapper.scrollHeight;
+            }
+            
+            async function loadChatHistory() {
+                try {
+                    const response = await fetch(`/api/chat/history?chatSessionId=${encodeURIComponent(chatSessionId)}`, {
+                        credentials: 'include'
+                    });
+                    
+                    if (!response.ok) throw new Error('Failed to load history');
+                    
+                    const messages = await response.json();
+                    messagesList.innerHTML = '';
+                    
+                    if (messages.length === 0) {
+                        messagesList.innerHTML = '<div class="empty-chat-state"><div class="icon">💬</div><h3>Start a Conversation</h3><p>Send a message to connect with our support team.</p></div>';
+                    } else {
+                        messages.forEach(msg => {
+                            const message = {
+                                messageId: msg.id,
+                                messageText: msg.content,
+                                messageType: msg.messageType,
+                                role: msg.role,
+                                sentAt: msg.createdAt,
+                                status: msg.isSeen ? 'Seen' : 'Sent'
+                            };
+                            renderMessage(message);
+                        });
+                    }
+
+                    // When user opens the chat, mark any unseen admin messages as seen
+                    // so the admin dashboard can update Sent -> Seen in real time.
+                    await markMessagesAsSeen();
+                } catch (err) {
+                    console.error('Failed to load history:', err);
+                }
+            }
+            
+            async function initChat() {
+                try {
+                    // Get or create the user's chat session
+                    const response = await fetch('/api/chat/my-session', {
+                        method: 'GET',
+                        credentials: 'include'
+                    });
+                    
+                    if (!response.ok) throw new Error('Failed to get session');
+                    
+                    const data = await response.json();
+                    chatSessionId = data.chatSessionId;
+                    
+                    // Join SignalR group
+                    await ChatClient.joinChat(chatSessionId);
+                    
+                    // Load chat history
+                    await loadChatHistory();
+
+                    // Start periodic presence heartbeat so admin can see Online/Idle/Offline
+                    await sendHeartbeat();
+                    if (!heartbeatTimer) {
+                        heartbeatTimer = setInterval(sendHeartbeat, 30000); // every 30s
+                    }
+                } catch (err) {
+                    console.error('Failed to init chat:', err);
+                    messagesList.innerHTML = '<div class="empty-chat-state"><div class="icon">❌</div><h3>Error</h3><p>Failed to connect to chat. Please refresh the page.</p></div>';
+                }
+            }
+            
+            // File upload handling
+            fileInput.addEventListener('change', async function() {
+                const file = this.files[0];
+                if (!file) return;
+                
+                // Show preview
+                filePreviewArea.classList.remove('d-none');
+                filePreviewName.textContent = file.name;
+                filePreviewSize.textContent = formatFileSize(file.size);
+                
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        filePreviewImage.src = e.target.result;
+                        filePreviewImage.classList.remove('d-none');
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    filePreviewImage.classList.add('d-none');
+                }
+                
+                // Upload file
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                try {
+                    sendBtn.disabled = true;
+                    const response = await fetch('/api/chat/upload-file', {
+                        method: 'POST',
+                        body: formData,
+                        credentials: 'include'
+                    });
+                    
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.message || 'Upload failed');
+                    }
+                    
+                    const data = await response.json();
+                    uploadedFilePath = data.filePath;
+                    uploadedFileType = data.fileType;
+                } catch (err) {
+                    alert('File upload failed: ' + err.message);
+                    clearFileUpload();
+                } finally {
+                    sendBtn.disabled = false;
+                }
+            });
+            
+            removeFileBtn.addEventListener('click', clearFileUpload);
+            
+            function clearFileUpload() {
+                fileInput.value = '';
+                filePreviewArea.classList.add('d-none');
+                filePreviewImage.src = '';
+                filePreviewImage.classList.add('d-none');
+                uploadedFilePath = null;
+                uploadedFileType = null;
+            }
+            
+            // Send message
+            sendBtn.addEventListener('click', async function() {
+                const text = messageInput.value.trim();
+                if (!text && !uploadedFilePath) return;
+                
+                try {
+                    sendBtn.disabled = true;
+                    
+                    if (uploadedFilePath) {
+                        // Send file message
+                        const messageType = uploadedFileType === 'image' ? 'Image' : 'File';
+                        await ChatClient.sendMessageTo(chatSessionId, uploadedFilePath, messageType);
+                        clearFileUpload();
+                    } else {
+                        // Send text message
+                        await ChatClient.sendMessageTo(chatSessionId, text);
+                    }
+                    
+                    messageInput.value = '';
+                    messageInput.style.height = 'auto';
+                } catch (err) {
+                    alert('Failed to send: ' + err.message);
+                } finally {
+                    sendBtn.disabled = false;
+                }
+            });
+            
+            // Enter to send
+            messageInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendBtn.click();
+                }
+            });
+            
+            // Auto-resize textarea
+            messageInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+            });
+            
+            // Initialize
+            async function init() {
+                await ChatClient.init(function(message) {
+                    if (message.chatSessionId === chatSessionId) {
+                        renderMessage(message);
+
+                        // If an admin message arrives while user is viewing the chat,
+                        // mark it seen immediately so admin UI updates.
+                        if (message.role !== 'User') {
+                            markMessagesAsSeen();
+                        }
+                    }
+                });
+                
+                // Listen for status changes
+                ChatClient.onMessageStatusChanged(function(event) {
+                    if (event.chatSessionId === chatSessionId) {
+                        event.messageIds.forEach(messageId => {
+                            const statusSpan = document.querySelector(`.message-status[data-message-id="${messageId}"]`);
+                            if (statusSpan) {
+                                const statusText = event.status || 'Sent';
+                                const statusIcon = statusText === 'Seen' ? '✓✓' : '✓';
+                                statusSpan.textContent = `${statusIcon} ${statusText}`;
+                            }
+                        });
+                    }
+                });
+                
+                await initChat();
+            }
+            
+            document.addEventListener('DOMContentLoaded', init);
+        })();
+    </script>
+}

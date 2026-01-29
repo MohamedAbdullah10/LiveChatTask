@@ -4,150 +4,687 @@
     ViewData["Title"] = "Admin Dashboard";
 }
 
-<div class="row mt-4 g-3">
-    <!-- Active Users Sidebar -->
-    <div class="col-12 col-lg-3">
-        <div class="card h-100 shadow-sm">
-            <div class="card-header bg-light">
-                <h5 class="mb-0">Active Users</h5>
+<link rel="stylesheet" href="~/css/admin-dashboard.css" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+    body { font-family: 'Inter', sans-serif; margin: 0; }
+    .settings-panel { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .settings-panel h5 { margin-top: 0; color: #667eea; }
+    .settings-panel label { font-weight: 500; font-size: 0.9rem; color: #4b5563; margin-bottom: 0.5rem; display: block; }
+    .settings-panel input { width: 100%; padding: 0.5rem; border: 2px solid #e5e7eb; border-radius: 8px; }
+    .settings-panel .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); border: none; padding: 0.5rem 1rem; border-radius: 8px; color: white; cursor: pointer; }
+    .settings-panel .btn-primary:hover { opacity: 0.9; }
+    .chat-tabs-container { background: white; border-bottom: 2px solid #e5e7eb; padding: 0.75rem 1.5rem; }
+    .chat-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chat-tab { background: #f3f4f6; border: none; padding: 0.5rem 1rem; border-radius: 8px 8px 0 0; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 500; transition: all 0.2s; }
+    .chat-tab:hover { background: #e5e7eb; }
+    .chat-tab.active { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+    .chat-tab-close { margin-left: 8px; cursor: pointer; font-weight: bold; }
+    .chat-tab-close:hover { color: #ef4444; }
+    .chat-panels { flex: 1; overflow-y: auto; }
+    .chat-panel { height: 100%; overflow-y: auto; padding: 1.5rem; }
+    .three-column-layout { display: flex; gap: 1rem; height: calc(100vh - 20px); padding: 10px; }
+    .sidebar-col { width: 320px; }
+    .main-col { flex: 1; display: flex; flex-direction: column; background: white; border-radius: 12px; overflow: hidden; }
+    .settings-col { width: 300px; }
+</style>
+
+<div class="three-column-layout">
+    <!-- Left Sidebar: Users -->
+    <div class="sidebar-col">
+        <div class="admin-sidebar">
+            <div class="sidebar-header">
+                <h2>💬 Chat Dashboard <span class="admin-badge">Admin</span></h2>
             </div>
-            <div class="card-body p-0">
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        user1@livechat.com
-                        <span class="badge bg-success rounded-pill">Online</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        user2@livechat.com
-                        <span class="badge bg-success rounded-pill">Online</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        user3@livechat.com
-                        <span class="badge bg-secondary rounded-pill">Idle</span>
-                    </li>
-                    <li class="list-group-item text-center text-muted small">
-                        (Sample data - will be populated from live sessions)
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </div>
-
-    <!-- Chat Panel -->
-    <div class="col-12 col-lg-6">
-        <div class="card h-100 shadow-sm d-flex flex-column">
-            <div class="card-header d-flex justify-content-between align-items-center bg-primary text-white">
-                <div>
-                    <h5 class="mb-0">Chat with user1@livechat.com</h5>
-                    <small class="text-white-50">Multiple conversations will be supported here</small>
-                </div>
-                <span class="badge bg-success">Live</span>
-            </div>
-            <div class="card-body d-flex flex-column p-0">
-                <div class="p-3 border-bottom bg-light">
-                    <span class="badge bg-secondary me-2">Sent</span>
-                    <span class="badge bg-success">Seen</span>
-                    <span class="text-muted small ms-2">Status flags displayed under each message</span>
-                </div>
-
-                <!-- Messages area -->
-                <div class="flex-grow-1 p-3" style="overflow-y: auto; max-height: 420px;">
-                    <!-- User message -->
-                    <div class="d-flex mb-3">
-                        <div class="bg-light border rounded-3 p-3">
-                            <div class="small text-muted mb-1">User · 10:02</div>
-                            <div>Hello, I need help with my subscription.</div>
-                            <div class="small text-muted mt-1">
-                                <span class="badge bg-secondary me-1">Sent</span>
-                                <span class="badge bg-outline-secondary border">Text</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Admin message -->
-                    <div class="d-flex justify-content-end mb-3">
-                        <div class="bg-primary text-white rounded-3 p-3">
-                            <div class="small text-white-50 mb-1">Admin · 10:03</div>
-                            <div>Certainly. Can you confirm your account email?</div>
-                            <div class="small text-white-50 mt-1">
-                                <span class="badge bg-success me-1">Seen</span>
-                                <span class="badge bg-outline-light border">Text</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Placeholder rich content message -->
-                    <div class="d-flex mb-3">
-                        <div class="bg-light border rounded-3 p-3">
-                            <div class="small text-muted mb-1">User · 10:04</div>
-                            <div>
-                                <strong>Attachment:</strong> invoice-2026.pdf
-                            </div>
-                            <div class="small text-muted mt-1">
-                                <span class="badge bg-secondary me-1">Sent</span>
-                                <span class="badge bg-outline-secondary border">File</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Composer -->
-                <div class="border-top p-3 bg-light">
-                    <div class="mb-2 d-flex gap-2">
-                        <button class="btn btn-outline-secondary btn-sm" type="button" disabled>
-                            <span class="me-1">🖼</span> Image
-                        </button>
-                        <button class="btn btn-outline-secondary btn-sm" type="button" disabled>
-                            <span class="me-1">📎</span> File
-                        </button>
-                        <button class="btn btn-outline-secondary btn-sm" type="button" disabled>
-                            <span class="me-1">🎤</span> Voice
-                        </button>
-                    </div>
-                    <div class="input-group">
-                        <textarea class="form-control" rows="1" placeholder="Type a message..." disabled></textarea>
-                        <button class="btn btn-primary" type="button" disabled>Send</button>
-                    </div>
-                    <div class="form-text small mt-1">
-                        Message length and idle timeout rules are configured in the Settings panel.
-                    </div>
-                </div>
+            <div class="user-list">
+                <div class="user-list-header">Active Conversations</div>
+                <div id="adminUsersLoading" class="text-center p-3">Loading users...</div>
+                <div id="adminUsersContainer"></div>
             </div>
         </div>
     </div>
 
-    <!-- Settings Panel -->
-    <div class="col-12 col-lg-3">
-        <div class="card h-100 shadow-sm">
-            <div class="card-header bg-light">
-                <h5 class="mb-0">Chat Settings</h5>
+    <!-- Main: Multi-tab Chats -->
+    <div class="main-col">
+        <div class="chat-header">
+            <div class="chat-header-info">
+                <h3>Support Console</h3>
+                <div class="status-indicator"><span class="dot online"></span> Connected</div>
             </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <label class="form-label">Max characters per message</label>
-                    <input type="number" class="form-control" value="500" min="50" max="2000" disabled />
-                    <div class="form-text">Admin will be able to adjust this limit.</div>
-                </div>
+            <div class="chat-actions">
+                <button type="button" onclick="location.reload()">🔄 Refresh</button>
+                <form method="post" asp-page-handler="Logout" style="display: inline;">
+                    <button type="submit">Logout</button>
+                </form>
+            </div>
+        </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Max idle minutes per user</label>
-                    <input type="number" class="form-control" value="5" min="1" max="60" disabled />
-                    <div class="form-text">If user is idle too long, an automatic warning will be sent.</div>
-                </div>
+        <!-- Tabs -->
+        <div class="chat-tabs-container">
+            <div id="adminChatTabs" class="chat-tabs"></div>
+        </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Idle warning message</label>
-                    <textarea class="form-control" rows="3" disabled>
-The chat will be terminated because we have not received a response from you.
-                    </textarea>
-                    <div class="form-text">This message will be auto-sent after configured idle time.</div>
-                </div>
+        <!-- Chat Panels -->
+        <div id="adminChatPanels" class="chat-panels">
+            <div class="empty-state" style="height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <div class="empty-state-icon">💬</div>
+                <h3>Welcome to Admin Dashboard</h3>
+                <p>Select a user from the left to open a chat tab.</p>
+            </div>
+        </div>
 
-                <div class="alert alert-info small mb-0">
-                    All controls are placeholders. In the next step, they will be wired to real-time chat logic.
+        <!-- Message Input -->
+        <div class="message-input-container">
+            <div id="filePreviewContainer" class="file-preview d-none">
+                <img id="filePreviewImage" src="" alt="Preview" class="d-none" />
+                <div class="file-preview-info">
+                    <strong id="filePreviewName"></strong>
+                    <div id="filePreviewSize" class="file-size"></div>
+                </div>
+                <button type="button" class="remove-file" id="removeFileBtn">Remove</button>
+            </div>
+            <div class="message-input-wrapper">
+                <label class="file-upload-btn">📎 <input type="file" id="fileInput" accept="image/*,.pdf,.doc,.docx,.txt" /></label>
+                <div class="input-wrapper">
+                    <textarea id="messageInput" class="message-input" placeholder="Type your message..." rows="1" disabled></textarea>
+                </div>
+                <button id="sendButton" class="send-button" type="button" disabled>✈️</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Sidebar: Settings -->
+    <div class="settings-col">
+        <div class="settings-panel">
+            <h5>Chat Settings</h5>
+            <div style="margin-bottom: 1rem;">
+                <label>Max characters per message</label>
+                <input id="adminMaxCharsInput" type="number" value="500" min="10" max="5000" />
+                <div style="font-size: 0.85rem; color: #6b7280; margin-top: 4px;">Applies to user messages only.</div>
+                <div style="margin-top: 0.75rem;">
+                    <button id="adminSaveSettingsBtn" type="button" class="btn-primary">Save</button>
+                    <span id="adminSettingsStatus" style="margin-left: 8px; font-size: 0.85rem; color: #6b7280;"></span>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js" crossorigin="anonymous"></script>
+    <script src="~/js/chat.js"></script>
+    <script>
+(function() {
+    const openChats = {}; // chatSessionId => { userId, userLabel, panelEl }
+    let activeChatSessionId = null;
+    let uploadedFilePath = null;
+    let uploadedFileType = null;
+    
+    const tabs = document.getElementById('adminChatTabs');
+    const panelsHost = document.getElementById('adminChatPanels');
+    const messageInput = document.getElementById('messageInput');
+    const sendButton = document.getElementById('sendButton');
+    const fileInput = document.getElementById('fileInput');
+    const filePreviewContainer = document.getElementById('filePreviewContainer');
+    const filePreviewImage = document.getElementById('filePreviewImage');
+    const filePreviewName = document.getElementById('filePreviewName');
+    const filePreviewSize = document.getElementById('filePreviewSize');
+    const removeFileBtn = document.getElementById('removeFileBtn');
+    const usersContainer = document.getElementById('adminUsersContainer');
+    const usersLoading = document.getElementById('adminUsersLoading');
+    const maxCharsInput = document.getElementById('adminMaxCharsInput');
+    const saveSettingsBtn = document.getElementById('adminSaveSettingsBtn');
+    const settingsStatus = document.getElementById('adminSettingsStatus');
+    
+    const storageKey = 'adminOpenChats';
+    
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text || '';
+        return div.innerHTML;
+    }
+    
+    function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+    
+    function saveOpenChatsToStorage() {
+        try {
+            const items = Object.keys(openChats).map(id => ({
+                chatSessionId: id,
+                userId: openChats[id].userId,
+                userLabel: openChats[id].userLabel
+            }));
+            localStorage.setItem(storageKey, JSON.stringify(items));
+        } catch { }
+    }
+    
+    function loadOpenChatsFromStorage() {
+        try {
+            const raw = localStorage.getItem(storageKey);
+            if (!raw) return [];
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch {
+            return [];
+        }
+    }
+    
+    function setActiveChat(chatSessionId) {
+        activeChatSessionId = chatSessionId;
+        messageInput.disabled = !chatSessionId;
+        sendButton.disabled = !chatSessionId;
+        
+        tabs.querySelectorAll('.chat-tab').forEach(btn => {
+            btn.classList.toggle('active', btn.getAttribute('data-chat-session-id') === chatSessionId);
+        });
+        
+        Object.keys(openChats).forEach(id => {
+            const panel = openChats[id].panelEl;
+            if (id === chatSessionId) {
+                panel.classList.remove('d-none');
+            } else {
+                panel.classList.add('d-none');
+            }
+        });
+        
+        const panel = openChats[chatSessionId]?.panelEl;
+        if (panel) panel.scrollTop = panel.scrollHeight;
+        
+        if (chatSessionId) markMessagesAsSeen(chatSessionId);
+    }
+    
+    async function markMessagesAsSeen(chatSessionId) {
+        if (!chatSessionId) return;
+        try {
+            await fetch('/api/chat/mark-seen', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chatSessionId }),
+                credentials: 'include'
+            });
+        } catch { }
+    }
+    
+    function createPanel(chatSessionId) {
+        const panel = document.createElement('div');
+        panel.className = 'chat-panel d-none';
+        panel.innerHTML = '<div style="text-align:center; color: #9ca3af;">Loading history...</div>';
+        return panel;
+    }
+
+    function removeEmptyStateIfPresent() {
+        const empty = panelsHost.querySelector('.empty-state');
+        if (empty) empty.remove();
+    }
+    
+    function renderMessage(message, panelEl) {
+        const isAdmin = message.role === 'Admin';
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${isAdmin ? 'sent' : 'received'}`;
+        messageDiv.setAttribute('data-message-id', message.messageId || '');
+        
+        const avatar = document.createElement('div');
+        avatar.className = 'message-avatar';
+        avatar.textContent = isAdmin ? 'A' : 'U';
+        
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
+        
+        const bubble = document.createElement('div');
+        bubble.className = 'message-bubble';
+        
+        if (message.messageType === 'Image') {
+            const img = document.createElement('img');
+            img.src = message.messageText;
+            img.className = 'message-image';
+            img.alt = 'Shared image';
+            img.onclick = () => window.open(message.messageText, '_blank');
+            bubble.appendChild(img);
+        } else if (message.messageType === 'File') {
+            const fileLink = document.createElement('a');
+            fileLink.href = message.messageText;
+            fileLink.className = 'message-file';
+            fileLink.target = '_blank';
+            fileLink.download = '';
+            
+            const fileIcon = document.createElement('div');
+            fileIcon.className = 'file-icon';
+            fileIcon.textContent = '📄';
+            
+            const fileInfo = document.createElement('div');
+            fileInfo.className = 'file-info';
+            
+            const fileName = document.createElement('div');
+            fileName.className = 'file-name';
+            fileName.textContent = message.messageText.split('/').pop();
+            
+            fileInfo.appendChild(fileName);
+            fileLink.appendChild(fileIcon);
+            fileLink.appendChild(fileInfo);
+            bubble.appendChild(fileLink);
+        } else {
+            const textP = document.createElement('p');
+            textP.className = 'message-text';
+            textP.textContent = message.messageText;
+            bubble.appendChild(textP);
+        }
+        
+        const meta = document.createElement('div');
+        meta.className = 'message-meta';
+        const time = new Date(message.sentAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        let metaHTML = `<span>${time}</span>`;
+        // Only show Sent/Seen status for admin's own messages (not user messages)
+        if (isAdmin) {
+            const statusText = message.status || 'Sent';
+            const statusIcon = statusText === 'Seen' ? '✓✓' : '✓';
+            metaHTML += ` · <span class="message-status" data-message-id="${message.messageId || ''}">${statusIcon} ${statusText}</span>`;
+        }
+        meta.innerHTML = metaHTML;
+        
+        contentDiv.appendChild(bubble);
+        contentDiv.appendChild(meta);
+        messageDiv.appendChild(avatar);
+        messageDiv.appendChild(contentDiv);
+        
+        panelEl.appendChild(messageDiv);
+        panelEl.scrollTop = panelEl.scrollHeight;
+    }
+    
+    async function loadChatHistory(chatSessionId) {
+        const panelEl = openChats[chatSessionId]?.panelEl;
+        if (!panelEl) return;
+        
+        try {
+            const response = await fetch(`/api/chat/history?chatSessionId=${encodeURIComponent(chatSessionId)}`, {
+                credentials: 'include'
+            });
+            
+            if (!response.ok) throw new Error('Failed to load history');
+            
+            const messages = await response.json();
+            panelEl.innerHTML = '';
+            
+            messages.forEach(msg => {
+                const message = {
+                    messageId: msg.id,
+                    messageText: msg.content,
+                    messageType: msg.messageType,
+                    role: msg.role,
+                    sentAt: msg.createdAt,
+                    status: msg.isSeen ? 'Seen' : 'Sent'
+                };
+                renderMessage(message, panelEl);
+            });
+            
+            await markMessagesAsSeen(chatSessionId);
+        } catch (err) {
+            panelEl.innerHTML = '<div style="color: #ef4444;">Failed to load history.</div>';
+        }
+    }
+    
+    async function openChatForUser(userId, userLabel, existingChatSessionId) {
+        let chatSessionId = existingChatSessionId;
+        if (!chatSessionId) {
+            const response = await fetch('/api/chat/open', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId }),
+                credentials: 'include'
+            });
+            
+            if (!response.ok) {
+                alert('Failed to open chat.');
+                return;
+            }
+            
+            const body = await response.json();
+            chatSessionId = body.chatSessionId;
+        }
+        
+        await ChatClient.joinChat(chatSessionId);
+        
+        if (!openChats[chatSessionId]) {
+            // Create tab
+            const tabBtn = document.createElement('button');
+            tabBtn.type = 'button';
+            tabBtn.className = 'chat-tab';
+            tabBtn.setAttribute('data-chat-session-id', chatSessionId);
+            
+            const labelSpan = document.createElement('span');
+            labelSpan.textContent = userLabel;
+            
+            const closeBtn = document.createElement('span');
+            closeBtn.className = 'chat-tab-close';
+            closeBtn.textContent = '×';
+            closeBtn.onclick = (e) => {
+                e.stopPropagation();
+                closeChatTab(chatSessionId);
+            };
+            
+            tabBtn.appendChild(labelSpan);
+            tabBtn.appendChild(closeBtn);
+            tabBtn.onclick = () => setActiveChat(chatSessionId);
+            tabs.appendChild(tabBtn);
+            
+            // Create panel
+            const panelEl = createPanel(chatSessionId);
+            // Only remove the initial empty-state placeholder.
+            // Do NOT clear the whole container, otherwise previously opened panels disappear.
+            removeEmptyStateIfPresent();
+            panelsHost.appendChild(panelEl);
+            
+            openChats[chatSessionId] = { userId, userLabel, panelEl };
+            saveOpenChatsToStorage();
+            
+            await loadChatHistory(chatSessionId);
+        }
+        
+        setActiveChat(chatSessionId);
+    }
+    
+    function closeChatTab(chatSessionId) {
+        const chat = openChats[chatSessionId];
+        if (!chat) return;
+        
+        const tabBtn = tabs.querySelector(`.chat-tab[data-chat-session-id="${chatSessionId}"]`);
+        if (tabBtn) tabBtn.remove();
+        
+        if (chat.panelEl) chat.panelEl.remove();
+        
+        delete openChats[chatSessionId];
+        saveOpenChatsToStorage();
+        
+        const remainingIds = Object.keys(openChats);
+        if (activeChatSessionId === chatSessionId) {
+            activeChatSessionId = remainingIds.length ? remainingIds[0] : null;
+            if (activeChatSessionId) setActiveChat(activeChatSessionId);
+            else {
+                panelsHost.innerHTML = '<div class="empty-state" style="height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;"><div class="empty-state-icon">💬</div><h3>No chats open</h3><p>Select a user to open a chat.</p></div>';
+                messageInput.disabled = true;
+                sendButton.disabled = true;
+            }
+        }
+    }
+    
+    async function loadUsers() {
+        try {
+            const response = await fetch('/api/chat/sessions', { credentials: 'include' });
+            if (!response.ok) throw new Error('Failed to load users');
+            
+            const sessions = await response.json();
+            usersLoading.style.display = 'none';
+            usersContainer.innerHTML = '';
+            
+            sessions.forEach(session => {
+                const userCard = document.createElement('div');
+                userCard.className = 'user-card';
+                userCard.onclick = () => openChatForUser(session.userId, session.userNameOrEmail);
+                
+                const header = document.createElement('div');
+                header.className = 'user-card-header';
+                
+                const avatar = document.createElement('div');
+                avatar.className = 'user-avatar';
+                avatar.textContent = session.userNameOrEmail.charAt(0).toUpperCase();
+                
+                const statusDot = document.createElement('div');
+                statusDot.className = 'user-status-dot offline';
+                statusDot.id = 'status-' + session.userId;
+                avatar.appendChild(statusDot);
+                
+                const info = document.createElement('div');
+                info.className = 'user-info';
+                const name = document.createElement('h4');
+                name.textContent = session.userNameOrEmail;
+                const status = document.createElement('p');
+                status.textContent = 'Offline';
+                status.id = 'status-text-' + session.userId;
+                info.appendChild(name);
+                info.appendChild(status);
+                
+                header.appendChild(avatar);
+                header.appendChild(info);
+                
+                if (session.unreadCount > 0) {
+                    const badge = document.createElement('span');
+                    badge.className = 'unread-badge';
+                    badge.textContent = session.unreadCount;
+                    header.appendChild(badge);
+                }
+                
+                userCard.appendChild(header);
+                usersContainer.appendChild(userCard);
+            });
+            
+            loadPresence();
+        } catch (err) {
+            usersLoading.textContent = 'Failed to load users';
+        }
+    }
+    
+    async function loadPresence() {
+        try {
+            const response = await fetch('/api/presence/users', { credentials: 'include' });
+            if (!response.ok) return;
+            
+            const users = await response.json();
+            users.forEach(user => {
+                const dot = document.getElementById('status-' + user.userId);
+                const text = document.getElementById('status-text-' + user.userId);
+                if (dot) {
+                    const statusClass = user.status === 'Online'
+                        ? 'online'
+                        : (user.status === 'Idle' ? 'idle' : 'offline');
+                    dot.className = 'user-status-dot ' + statusClass;
+                }
+                if (text) {
+                    if (user.status === 'Online') text.textContent = 'Online';
+                    else if (user.status === 'Idle') text.textContent = 'Idle';
+                    else text.textContent = 'Last seen: ' + new Date(user.lastSeen).toLocaleString();
+                }
+            });
+        } catch { }
+    }
+    
+    async function loadChatSettings() {
+        try {
+            const resp = await fetch('/api/settings/chat', { credentials: 'include' });
+            if (!resp.ok) return;
+            const data = await resp.json();
+            if (typeof data.maxUserMessageLength === 'number') {
+                maxCharsInput.value = data.maxUserMessageLength;
+            }
+        } catch { }
+    }
+    
+    async function saveChatSettings() {
+        const value = parseInt(maxCharsInput.value, 10);
+        if (!Number.isFinite(value) || value < 10 || value > 5000) {
+            settingsStatus.textContent = 'Invalid value (10-5000).';
+            return;
+        }
+        
+        settingsStatus.textContent = 'Saving...';
+        saveSettingsBtn.disabled = true;
+        try {
+            const resp = await fetch('/api/settings/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ maxUserMessageLength: value }),
+                credentials: 'include'
+            });
+            if (!resp.ok) {
+                settingsStatus.textContent = 'Failed to save.';
+                return;
+            }
+            const data = await resp.json();
+            settingsStatus.textContent = 'Saved.';
+            if (typeof data.maxUserMessageLength === 'number') {
+                maxCharsInput.value = data.maxUserMessageLength;
+            }
+        } catch {
+            settingsStatus.textContent = 'Failed to save.';
+        } finally {
+            saveSettingsBtn.disabled = false;
+            setTimeout(() => { settingsStatus.textContent = ''; }, 1500);
+        }
+    }
+    
+    // File upload
+    fileInput.addEventListener('change', async function() {
+        const file = this.files[0];
+        if (!file) return;
+        
+        filePreviewContainer.classList.remove('d-none');
+        filePreviewName.textContent = file.name;
+        filePreviewSize.textContent = formatFileSize(file.size);
+        
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                filePreviewImage.src = e.target.result;
+                filePreviewImage.classList.remove('d-none');
+            };
+            reader.readAsDataURL(file);
+        } else {
+            filePreviewImage.classList.add('d-none');
+        }
+        
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        try {
+            sendButton.disabled = true;
+            const response = await fetch('/api/chat/upload-file', {
+                method: 'POST',
+                body: formData,
+                credentials: 'include'
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Upload failed');
+            }
+            
+            const data = await response.json();
+            uploadedFilePath = data.filePath;
+            uploadedFileType = data.fileType;
+        } catch (err) {
+            alert('File upload failed: ' + err.message);
+            clearFileUpload();
+        } finally {
+            sendButton.disabled = !activeChatSessionId;
+        }
+    });
+    
+    removeFileBtn.addEventListener('click', clearFileUpload);
+    
+    function clearFileUpload() {
+        fileInput.value = '';
+        filePreviewContainer.classList.add('d-none');
+        filePreviewImage.src = '';
+        filePreviewImage.classList.add('d-none');
+        uploadedFilePath = null;
+        uploadedFileType = null;
+    }
+    
+    // Send message
+    sendButton.addEventListener('click', async function() {
+        const text = messageInput.value.trim();
+        if (!text && !uploadedFilePath) return;
+        if (!activeChatSessionId) return;
+        
+        try {
+            sendButton.disabled = true;
+            
+            if (uploadedFilePath) {
+                const messageType = uploadedFileType === 'image' ? 'Image' : 'File';
+                await ChatClient.sendMessageTo(activeChatSessionId, uploadedFilePath, messageType);
+                clearFileUpload();
+            } else {
+                await ChatClient.sendMessageTo(activeChatSessionId, text);
+            }
+            
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+        } catch (err) {
+            alert('Failed to send: ' + err.message);
+        } finally {
+            sendButton.disabled = !activeChatSessionId;
+        }
+    });
+    
+    messageInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendButton.click();
+        }
+    });
+    
+    messageInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+    });
+    
+    // Initialize
+    async function init() {
+        await ChatClient.init(function(message) {
+            if (openChats[message.chatSessionId]) {
+                renderMessage(message, openChats[message.chatSessionId].panelEl);
+                if (message.role !== 'Admin' && message.chatSessionId === activeChatSessionId) {
+                    markMessagesAsSeen(message.chatSessionId);
+                }
+            }
+        });
+        
+        ChatClient.onPresenceChanged(function(event) {
+            const dot = document.getElementById('status-' + event.userId);
+            const text = document.getElementById('status-text-' + event.userId);
+            if (dot) {
+                const statusClass = event.status === 'Online'
+                    ? 'online'
+                    : (event.status === 'Idle' ? 'idle' : 'offline');
+                dot.className = 'user-status-dot ' + statusClass;
+            }
+            if (text) {
+                if (event.status === 'Online') text.textContent = 'Online';
+                else if (event.status === 'Idle') text.textContent = 'Idle';
+                else text.textContent = 'Last seen: ' + new Date(event.lastSeen).toLocaleString();
+            }
+        });
+        
+        ChatClient.onMessageStatusChanged(function(event) {
+            if (openChats[event.chatSessionId]) {
+                event.messageIds.forEach(messageId => {
+                    const statusSpan = openChats[event.chatSessionId].panelEl.querySelector(`.message-status[data-message-id="${messageId}"]`);
+                    if (statusSpan) {
+                        const statusText = event.status || 'Sent';
+                        const statusIcon = statusText === 'Seen' ? '✓✓' : '✓';
+                        statusSpan.textContent = `${statusIcon} ${statusText}`;
+                    }
+                });
+            }
+        });
+        
+        await ChatClient.joinAdminPresence();
+        await loadUsers();
+        await loadChatSettings();
+        
+        if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', saveChatSettings);
+        
+        // Restore tabs
+        const toRestore = loadOpenChatsFromStorage();
+        for (const item of toRestore) {
+            if (!item || !item.chatSessionId) continue;
+            await openChatForUser(item.userId, item.userLabel || 'Chat', item.chatSessionId);
+        }
+    }
+    
+    document.addEventListener('DOMContentLoaded', init);
+})();
+    </script>
+}

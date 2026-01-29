@@ -14,6 +14,7 @@ namespace LiveChatTask.Data
 
         public DbSet<ChatSession> ChatSessions { get; set; }
         public DbSet<Message> Messages { get; set; }
+        public DbSet<ChatSettings> ChatSettings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -26,6 +27,10 @@ namespace LiveChatTask.Data
                 .WithMany(u => u.ChatSessions)
                 .HasForeignKey(cs => cs.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<ChatSession>()
+                .HasIndex(cs => cs.SessionKey)
+                .IsUnique();
 
             builder.Entity<ChatSession>()
                 .HasOne(cs => cs.Admin)
@@ -44,6 +49,10 @@ namespace LiveChatTask.Data
                 .WithMany(cs => cs.Messages)
                 .HasForeignKey(m => m.ChatSessionId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // Singleton-style settings row
+            builder.Entity<ChatSettings>()
+                .HasKey(x => x.Id);
         }
     }
 }

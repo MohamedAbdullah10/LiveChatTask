@@ -15,6 +15,10 @@ namespace LiveChatTask.Services
 
         Task<SignInResult> PasswordSignInAsync(string emailOrUserName, string password, bool rememberMe);
 
+        Task<SignInResult> UserPasswordSignInAsync(string emailOrUserName, string password, bool rememberMe);
+
+        Task<SignInResult> AdminPasswordSignInAsync(string emailOrUserName, string password, bool rememberMe);
+
         Task SignOutAsync();
 
         Task<ApplicationUser?> GetCurrentUserAsync(ClaimsPrincipal principal);

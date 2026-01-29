@@ -64,7 +64,7 @@
                 submitBtn.textContent = 'Signing in...';
 
                 try {
-                    const response = await fetch('/api/account/login', {
+                    const response = await fetch('/api/account/admin-login', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -79,13 +79,8 @@
                         errorDiv.classList.remove('d-none');
                         errorDiv.innerHTML = data.message || 'Login failed.';
                     } else {
-                        const roles = data.roles || [];
-                        if (roles.includes('Admin')) {
-                            window.location.href = '/Admin/Index';
-                        } else {
-                            errorDiv.classList.remove('d-none');
-                            errorDiv.innerHTML = 'You are not authorized as an admin.';
-                        }
+                        // Backend already validates admin role
+                        window.location.href = data.redirectUrl || '/Admin/Index';
                     }
                 } catch (err) {
                     errorDiv.classList.remove('d-none');

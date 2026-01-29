@@ -70,6 +70,50 @@ namespace LiveChatTask.Services
         }
 
         /// <summary>
+        /// Signs in a user with "User" role validation.
+        /// Returns Failed if the account is not a User account.
+        /// </summary>
+        public async Task<SignInResult> UserPasswordSignInAsync(string emailOrUserName, string password, bool rememberMe)
+        {
+            var user = await FindByEmailOrUserNameAsync(emailOrUserName);
+            if (user == null)
+            {
+                return SignInResult.Failed;
+            }
+
+            // Check if user has "User" role
+            var isUser = await _userManager.IsInRoleAsync(user, "User");
+            if (!isUser)
+            {
+                return SignInResult.Failed;
+            }
+
+            return await _signInManager.PasswordSignInAsync(user, password, rememberMe, lockoutOnFailure: false);
+        }
+
+        /// <summary>
+        /// Signs in a user with "Admin" role validation.
+        /// Returns Failed if the account is not an Admin account.
+        /// </summary>
+        public async Task<SignInResult> AdminPasswordSignInAsync(string emailOrUserName, string password, bool rememberMe)
+        {
+            var user = await FindByEmailOrUserNameAsync(emailOrUserName);
+            if (user == null)
+            {
+                return SignInResult.Failed;
+            }
+
+            // Check if user has "Admin" role
+            var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+            if (!isAdmin)
+            {
+                return SignInResult.Failed;
+            }
+
+            return await _signInManager.PasswordSignInAsync(user, password, rememberMe, lockoutOnFailure: false);
+        }
+
+        /// <summary>
         /// Signs out the current user.
         /// </summary>
         public Task SignOutAsync() => _signInManager.SignOutAsync();
