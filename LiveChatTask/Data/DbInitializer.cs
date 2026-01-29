@@ -77,9 +77,16 @@ namespace LiveChatTask.Data
                 context.ChatSettings.Add(new ChatSettings
                 {
                     MaxUserMessageLength = 500,
+                    MaxSessionDurationMinutes = 60,
                     UpdatedAt = DateTime.UtcNow,
                     UpdatedByAdminId = admin.Id
                 });
+                await context.SaveChangesAsync();
+            }
+            else if (settings.MaxSessionDurationMinutes == 0)
+            {
+                // Update existing settings that don't have MaxSessionDurationMinutes set
+                settings.MaxSessionDurationMinutes = 60;
                 await context.SaveChangesAsync();
             }
         }

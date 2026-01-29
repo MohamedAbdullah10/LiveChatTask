@@ -24,7 +24,12 @@ namespace LiveChatTask.Services
             }
 
             // Create default row if missing (defensive; DB initializer should seed this).
-            settings = new ChatSettings { MaxUserMessageLength = 500, UpdatedAt = DateTime.UtcNow };
+            settings = new ChatSettings 
+            { 
+                MaxUserMessageLength = 500, 
+                MaxSessionDurationMinutes = 60,
+                UpdatedAt = DateTime.UtcNow 
+            };
             _context.ChatSettings.Add(settings);
             await _context.SaveChangesAsync();
             return settings;
@@ -50,6 +55,33 @@ namespace LiveChatTask.Services
 
             var settings = await GetAsync();
             settings.MaxUserMessageLength = maxUserMessageLength;
+            settings.UpdatedAt = DateTime.UtcNow;
+            settings.UpdatedByAdminId = adminId;
+
+            await _context.SaveChangesAsync();
+            return settings;
+        }
+
+        public async Task<int> GetMaxSessionDurationMinutesAsync()
+        {
+            var settings = await GetAsync();
+            return settings.MaxSessionDurationMinutes;
+        }
+
+        public async Task<ChatSettings> UpdateMaxSessionDurationMinutesAsync(int maxDurationMinutes, string adminId)
+        {
+            if (maxDurationMinutes < 1 || maxDurationMinutes > 1440)
+            {
+                throw new ArgumentException("MaxSessionDurationMinutes must be between 1 and 1440 (1 minute to 24 hours).");
+            }
+
+            if (string.IsNullOrWhiteSpace(adminId))
+            {
+                throw new InvalidOperationException("adminId is required.");
+            }
+
+            var settings = await GetAsync();
+            settings.MaxSessionDurationMinutes = maxDurationMinutes;
             settings.UpdatedAt = DateTime.UtcNow;
             settings.UpdatedByAdminId = adminId;
 

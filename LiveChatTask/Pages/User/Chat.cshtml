@@ -23,9 +23,14 @@
                 <div class="chat-subtitle">We're here to help you</div>
             </div>
         </div>
-        <div class="chat-header-actions">
-            <form method="post" asp-page-handler="Logout">
-                <button type="submit" class="header-btn">Logout</button>
+        <div class="chat-header-right">
+            <div id="sessionTimer" class="session-timer" style="display: none;">
+                <span class="timer-label">Session expires in:</span>
+                <span id="timerMinutes" class="timer-value">--</span>
+                <span class="timer-unit">minutes</span>
+            </div>
+            <form id="userLogoutForm" method="post" asp-page-handler="Logout">
+                <button type="button" id="userLogoutBtn" class="header-btn">Logout</button>
             </form>
         </div>
     </div>
@@ -38,6 +43,15 @@
                 <h3>Start a Conversation</h3>
                 <p>Send a message to connect with our support team. We typically respond within a few minutes.</p>
             </div>
+        </div>
+    </div>
+
+    <!-- Expired session banner (hidden by default, shown when session expires) -->
+    <div id="expiredSessionBanner" class="expired-session-banner d-none">
+        <div class="expired-banner-content">
+            <span class="expired-icon">⏰</span>
+            <p class="expired-text">Your chat session has expired.</p>
+            <button type="button" id="startNewSessionBtn" class="start-new-session-btn">Start New Chat Session</button>
         </div>
     </div>
 
@@ -73,11 +87,12 @@
                     <textarea 
                         id="messageInput" 
                         class="message-input" 
-                        placeholder="Type a message..."
-                        rows="1"></textarea>
+                        placeholder="Initializing chat..."
+                        rows="1"
+                        disabled></textarea>
                 </div>
                 
-                <button id="sendBtn" class="send-btn" type="button">
+                <button id="sendBtn" class="send-btn" type="button" disabled>
                     ✈️
                 </button>
             </div>
@@ -94,6 +109,8 @@
             let uploadedFilePath = null;
             let uploadedFileType = null;
             let heartbeatTimer = null;
+            let sessionTimerInterval = null;
+            let sessionExpired = false;
             
             // Voice recording state
             let mediaRecorder = null;
@@ -284,8 +301,213 @@
                 }
             }
             
+            async function loadSessionInfo() {
+                if (!chatSessionId) return;
+                
+                try {
+                    const response = await fetch(`/api/chat/session-info?chatSessionId=${encodeURIComponent(chatSessionId)}`, {
+                        credentials: 'include'
+                    });
+                    
+                    if (!response.ok) return;
+                    
+                    const sessionInfo = await response.json();
+                    
+                    if (sessionInfo.isExpired) {
+                        handleSessionExpired();
+                        return;
+                    }
+                    
+                    // Show timer
+                    const timerEl = document.getElementById('sessionTimer');
+                    const timerMinutesEl = document.getElementById('timerMinutes');
+                    if (timerEl && timerMinutesEl) {
+                        timerEl.style.display = 'flex';
+                        updateTimerDisplay(sessionInfo.remainingMinutes);
+                        
+                        // Start countdown timer (update every 10 seconds)
+                        if (sessionTimerInterval) {
+                            clearInterval(sessionTimerInterval);
+                        }
+                        // Update timer more frequently (every 5 seconds) to catch expiration quickly
+                        sessionTimerInterval = setInterval(async () => {
+                            if (sessionExpired) {
+                                clearInterval(sessionTimerInterval);
+                                sessionTimerInterval = null;
+                                return;
+                            }
+                            
+                            const resp = await fetch(`/api/chat/session-info?chatSessionId=${encodeURIComponent(chatSessionId)}`, {
+                                credentials: 'include'
+                            });
+                            if (resp.ok) {
+                                const info = await resp.json();
+                                if (info.isExpired) {
+                                    handleSessionExpired();
+                                } else {
+                                    updateTimerDisplay(info.remainingMinutes);
+                                    // If less than 1 minute remaining, check more frequently (every 2 seconds)
+                                    if (info.remainingMinutes < 1 && sessionTimerInterval) {
+                                        clearInterval(sessionTimerInterval);
+                                        sessionTimerInterval = setInterval(async () => {
+                                            if (sessionExpired) {
+                                                clearInterval(sessionTimerInterval);
+                                                sessionTimerInterval = null;
+                                                return;
+                                            }
+                                            const resp2 = await fetch(`/api/chat/session-info?chatSessionId=${encodeURIComponent(chatSessionId)}`, {
+                                                credentials: 'include'
+                                            });
+                                            if (resp2.ok) {
+                                                const info2 = await resp2.json();
+                                                if (info2.isExpired) {
+                                                    handleSessionExpired();
+                                                } else {
+                                                    updateTimerDisplay(info2.remainingMinutes);
+                                                }
+                                            }
+                                        }, 2000); // Check every 2 seconds when close to expiration
+                                    }
+                                }
+                            }
+                        }, 5000); // Update every 5 seconds normally
+                    }
+                } catch (err) {
+                    console.error('Failed to load session info:', err);
+                }
+            }
+            
+            function updateTimerDisplay(remainingMinutes) {
+                const timerMinutesEl = document.getElementById('timerMinutes');
+                if (timerMinutesEl) {
+                    timerMinutesEl.textContent = Math.ceil(remainingMinutes);
+                }
+                
+                // Check if session expired (remainingMinutes <= 0)
+                if (remainingMinutes <= 0 && !sessionExpired) {
+                    handleSessionExpired();
+                }
+            }
+            
+            function handleSessionExpired() {
+                sessionExpired = true;
+                
+                // Stop timer updates
+                if (sessionTimerInterval) {
+                    clearInterval(sessionTimerInterval);
+                    sessionTimerInterval = null;
+                }
+                
+                // Hide timer
+                const timerEl = document.getElementById('sessionTimer');
+                if (timerEl) {
+                    timerEl.style.display = 'none';
+                }
+                
+                // Disable input
+                const messageInput = document.getElementById('messageInput');
+                const sendBtn = document.getElementById('sendBtn');
+                if (messageInput) {
+                    messageInput.disabled = true;
+                    messageInput.placeholder = 'Your chat session has expired';
+                }
+                if (sendBtn) {
+                    sendBtn.disabled = true;
+                }
+                
+                // Show expiration message in chat area (with id so we can remove it when starting new session)
+                const messagesList = document.getElementById('messagesList');
+                if (messagesList && !document.getElementById('expiredSessionMessage')) {
+                    const expiredMsg = document.createElement('div');
+                    expiredMsg.id = 'expiredSessionMessage';
+                    expiredMsg.className = 'expired-session-message';
+                    expiredMsg.innerHTML = '<div class="icon">⏰</div><h3>Session Expired</h3><p>Your chat session has expired. Click "Start New Chat Session" below to continue.</p>';
+                    messagesList.appendChild(expiredMsg);
+                }
+                
+                // Show expired session banner with Start New Chat Session button
+                const banner = document.getElementById('expiredSessionBanner');
+                if (banner) {
+                    banner.classList.remove('d-none');
+                }
+            }
+            
+            async function startNewSession() {
+                const btn = document.getElementById('startNewSessionBtn');
+                if (btn) btn.disabled = true;
+                
+                const oldChatSessionId = chatSessionId;
+                
+                try {
+                    // GET /api/chat/my-session creates/returns new session if current was expired
+                    const response = await fetch('/api/chat/my-session', {
+                        method: 'GET',
+                        credentials: 'include'
+                    });
+                    
+                    if (!response.ok) throw new Error('Failed to start new session');
+                    
+                    const data = await response.json();
+                    const newChatSessionId = data.chatSessionId;
+                    
+                    if (!newChatSessionId) throw new Error('No session ID received');
+                    
+                    // Leave old SignalR group
+                    if (oldChatSessionId) {
+                        await ChatClient.leaveChat(oldChatSessionId);
+                    }
+                    
+                    chatSessionId = newChatSessionId;
+                    sessionExpired = false;
+                    
+                    // Join new SignalR group
+                    await ChatClient.joinChat(chatSessionId);
+                    
+                    // Clear old messages and show empty state (read-only history cleared)
+                    const messagesList = document.getElementById('messagesList');
+                    if (messagesList) {
+                        messagesList.innerHTML = '';
+                        const emptyState = document.createElement('div');
+                        emptyState.className = 'empty-chat-state';
+                        emptyState.innerHTML = '<div class="icon">💬</div><h3>Start a Conversation</h3><p>Send a message to connect with our support team. We typically respond within a few minutes.</p>';
+                        messagesList.appendChild(emptyState);
+                    }
+                    
+                    // Remove expired session banner
+                    const banner = document.getElementById('expiredSessionBanner');
+                    if (banner) banner.classList.add('d-none');
+                    
+                    // Re-enable input and send button
+                    const messageInput = document.getElementById('messageInput');
+                    const sendBtn = document.getElementById('sendBtn');
+                    if (messageInput) {
+                        messageInput.disabled = false;
+                        messageInput.placeholder = 'Type a message...';
+                    }
+                    if (sendBtn) sendBtn.disabled = false;
+                    
+                    // Start new countdown timer
+                    await loadSessionInfo();
+                    
+                    // Send heartbeat for presence
+                    await sendHeartbeat();
+                } catch (err) {
+                    console.error('Failed to start new session:', err);
+                    alert('Failed to start new session. Please try again.');
+                } finally {
+                    const startBtn = document.getElementById('startNewSessionBtn');
+                    if (startBtn) startBtn.disabled = false;
+                }
+            }
+            
             async function initChat() {
                 try {
+                    // Disable input while initializing
+                    const messageInput = document.getElementById('messageInput');
+                    const sendBtn = document.getElementById('sendBtn');
+                    if (messageInput) messageInput.disabled = true;
+                    if (sendBtn) sendBtn.disabled = true;
+                    
                     // Get or create the user's chat session
                     const response = await fetch('/api/chat/my-session', {
                         method: 'GET',
@@ -297,20 +519,32 @@
                     const data = await response.json();
                     chatSessionId = data.chatSessionId;
                     
+                    if (!chatSessionId) {
+                        throw new Error('No chat session ID received');
+                    }
+                    
                     // Join SignalR group
                     await ChatClient.joinChat(chatSessionId);
                     
                     // Load chat history
                     await loadChatHistory();
 
+                    // Load session info and start countdown timer
+                    await loadSessionInfo();
+
                     // Start periodic presence heartbeat so admin can see Online/Idle/Offline
                     await sendHeartbeat();
                     if (!heartbeatTimer) {
                         heartbeatTimer = setInterval(sendHeartbeat, 30000); // every 30s
                     }
+                    
+                    // Enable input after successful initialization
+                    if (messageInput && !sessionExpired) messageInput.disabled = false;
+                    if (sendBtn && !sessionExpired) sendBtn.disabled = false;
                 } catch (err) {
                     console.error('Failed to init chat:', err);
                     messagesList.innerHTML = '<div class="empty-chat-state"><div class="icon">❌</div><h3>Error</h3><p>Failed to connect to chat. Please refresh the page.</p></div>';
+                    // Keep input disabled on error
                 }
             }
             
@@ -528,6 +762,10 @@
                     const data = await response.json();
                     
                     // Send voice message via SignalR
+                    if (!chatSessionId) {
+                        alert('Chat session not initialized. Please wait...');
+                        return;
+                    }
                     await ChatClient.sendMessageTo(chatSessionId, data.filePath, 'Voice');
                     
                 } catch (err) {
@@ -542,8 +780,240 @@
             voiceStopBtn.addEventListener('click', stopVoiceRecording);
             voiceCancelBtn.addEventListener('click', cancelVoiceRecording);
             
+            // File upload handling
+            fileInput.addEventListener('change', async function() {
+                if (sessionExpired) {
+                    alert('Your chat session has expired. Please refresh the page to start a new session.');
+                    this.value = ''; // Clear file selection
+                    return;
+                }
+                
+                const file = this.files[0];
+                if (!file) return;
+                
+                // Show preview
+                filePreviewArea.classList.remove('d-none');
+                filePreviewName.textContent = file.name;
+                filePreviewSize.textContent = formatFileSize(file.size);
+                
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        filePreviewImage.src = e.target.result;
+                        filePreviewImage.classList.remove('d-none');
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    filePreviewImage.classList.add('d-none');
+                }
+                
+                // Upload file
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                try {
+                    sendBtn.disabled = true;
+                    const response = await fetch('/api/chat/upload-file', {
+                        method: 'POST',
+                        body: formData,
+                        credentials: 'include'
+                    });
+                    
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.message || 'Upload failed');
+                    }
+                    
+                    const data = await response.json();
+                    uploadedFilePath = data.filePath;
+                    uploadedFileType = data.fileType === 'image' ? 'image' : 'file';
+                } catch (err) {
+                    // Check if error is due to session expiration
+                    if (err.message && (err.message.includes('expired') || err.message.includes('session'))) {
+                        handleSessionExpired();
+                        alert('Your chat session has expired. Please refresh the page to start a new session.');
+                    } else {
+                        alert('File upload failed: ' + err.message);
+                    }
+                    clearFileUpload();
+                } finally {
+                    if (!sessionExpired) {
+                        sendBtn.disabled = false;
+                    }
+                }
+            });
+            
+            // Voice recording
+            async function startVoiceRecording() {
+                if (sessionExpired) {
+                    alert('Your chat session has expired. Please refresh the page to start a new session.');
+                    return;
+                }
+                
+                try {
+                    if (!chatSessionId) {
+                        alert('Please wait for chat to initialize.');
+                        return;
+                    }
+                    
+                    // Request microphone permission
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    recordingStream = stream;
+                    
+                    // Determine MIME type (prefer webm with opus codec)
+                    let mimeType = 'audio/webm;codecs=opus';
+                    if (!MediaRecorder.isTypeSupported(mimeType)) {
+                        mimeType = 'audio/webm';
+                        if (!MediaRecorder.isTypeSupported(mimeType)) {
+                            mimeType = ''; // Use browser default
+                        }
+                    }
+                    
+                    // Create MediaRecorder
+                    mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+                    audioChunks = [];
+                    
+                    mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            audioChunks.push(event.data);
+                        }
+                    };
+                    
+                    mediaRecorder.onstop = async () => {
+                        const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+                        await uploadVoiceRecording(audioBlob);
+                        
+                        // Stop all tracks
+                        if (recordingStream) {
+                            recordingStream.getTracks().forEach(track => track.stop());
+                            recordingStream = null;
+                        }
+                    };
+                    
+                    mediaRecorder.onerror = (event) => {
+                        console.error('MediaRecorder error:', event);
+                        alert('Recording error occurred. Please try again.');
+                        cancelVoiceRecording();
+                    };
+                    
+                    // Start recording
+                    mediaRecorder.start(1000); // Collect data every second
+                    recordingStartTime = Date.now();
+                    voiceRecordingIndicator.classList.remove('d-none');
+                    
+                    // Update timer
+                    recordingTimer = setInterval(() => {
+                        if (recordingStartTime) {
+                            const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+                            const minutes = Math.floor(elapsed / 60);
+                            const seconds = elapsed % 60;
+                            recordingTimerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                        }
+                    }, 100);
+                } catch (err) {
+                    console.error('Error starting recording:', err);
+                    alert('Failed to start recording: ' + err.message);
+                    cancelVoiceRecording();
+                }
+            }
+            
+            function stopVoiceRecording() {
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                }
+                cancelVoiceRecording();
+            }
+            
+            function cancelVoiceRecording() {
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                }
+                if (recordingStream) {
+                    recordingStream.getTracks().forEach(track => track.stop());
+                    recordingStream = null;
+                }
+                audioChunks = [];
+                voiceRecordingIndicator.classList.add('d-none');
+                recordingTimerEl.textContent = '00:00';
+                if (recordingTimer) {
+                    clearInterval(recordingTimer);
+                    recordingTimer = null;
+                }
+                recordingStartTime = null;
+            }
+            
+            async function uploadVoiceRecording(audioBlob) {
+                if (sessionExpired) {
+                    alert('Your chat session has expired. Please refresh the page to start a new session.');
+                    return;
+                }
+                
+                try {
+                    sendBtn.disabled = true;
+                    
+                    const formData = new FormData();
+                    // Determine file extension from MIME type
+                    let extension = 'webm';
+                    if (audioBlob.type.includes('ogg')) extension = 'ogg';
+                    else if (audioBlob.type.includes('mp4') || audioBlob.type.includes('m4a')) extension = 'm4a';
+                    else if (audioBlob.type.includes('wav')) extension = 'wav';
+                    
+                    const fileName = `voice_${Date.now()}.${extension}`;
+                    formData.append('file', audioBlob, fileName);
+                    
+                    const response = await fetch('/api/chat/upload-voice', {
+                        method: 'POST',
+                        body: formData,
+                        credentials: 'include'
+                    });
+                    
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.message || 'Upload failed');
+                    }
+                    
+                    const data = await response.json();
+                    
+                    // Send voice message via SignalR
+                    if (!chatSessionId) {
+                        alert('Chat session not initialized. Please wait...');
+                        return;
+                    }
+                    await ChatClient.sendMessageTo(chatSessionId, data.filePath, 'Voice');
+                    
+                } catch (err) {
+                    // Check if error is due to session expiration
+                    if (err.message && (err.message.includes('expired') || err.message.includes('session'))) {
+                        handleSessionExpired();
+                        alert('Your chat session has expired. Please refresh the page to start a new session.');
+                    } else {
+                        alert('Voice upload failed: ' + err.message);
+                    }
+                } finally {
+                    if (!sessionExpired) {
+                        sendBtn.disabled = false;
+                    }
+                }
+            }
+            
+            // Start New Chat Session button (when session expires)
+            const startNewSessionBtn = document.getElementById('startNewSessionBtn');
+            if (startNewSessionBtn) {
+                startNewSessionBtn.addEventListener('click', startNewSession);
+            }
+            
+            // Voice recording event listeners
+            voiceRecordBtn.addEventListener('click', startVoiceRecording);
+            voiceStopBtn.addEventListener('click', stopVoiceRecording);
+            voiceCancelBtn.addEventListener('click', cancelVoiceRecording);
+            
             // Send message
             sendBtn.addEventListener('click', async function() {
+                if (sessionExpired) {
+                    alert('Your chat session has expired. Please refresh the page to start a new session.');
+                    return;
+                }
+                
                 const text = messageInput.value.trim();
                 if (!text && !uploadedFilePath) return;
                 
@@ -552,20 +1022,36 @@
                     
                     if (uploadedFilePath) {
                         // Send file message
+                        if (!chatSessionId) {
+                            alert('Chat session not initialized. Please wait...');
+                            return;
+                        }
                         const messageType = uploadedFileType === 'image' ? 'Image' : 'File';
                         await ChatClient.sendMessageTo(chatSessionId, uploadedFilePath, messageType);
                         clearFileUpload();
                     } else {
                         // Send text message
-                        await ChatClient.sendMessageTo(chatSessionId, text);
+                        if (!chatSessionId) {
+                            alert('Chat session not initialized. Please wait...');
+                            return;
+                        }
+                        await ChatClient.sendMessageTo(chatSessionId, text, 'Text');
                     }
                     
                     messageInput.value = '';
                     messageInput.style.height = 'auto';
                 } catch (err) {
-                    alert('Failed to send: ' + err.message);
+                    // Check if error is due to session expiration
+                    if (err.message && (err.message.includes('expired') || err.message.includes('session'))) {
+                        handleSessionExpired();
+                        alert('Your chat session has expired. Please refresh the page to start a new session.');
+                    } else {
+                        alert('Failed to send: ' + err.message);
+                    }
                 } finally {
-                    sendBtn.disabled = false;
+                    if (!sessionExpired) {
+                        sendBtn.disabled = false;
+                    }
                 }
             });
             
@@ -573,14 +1059,18 @@
             messageInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    sendBtn.click();
+                    if (!sessionExpired) {
+                        sendBtn.click();
+                    }
                 }
             });
             
             // Auto-resize textarea
             messageInput.addEventListener('input', function() {
-                this.style.height = 'auto';
-                this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+                if (!sessionExpired) {
+                    this.style.height = 'auto';
+                    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+                }
             });
             
             // Initialize
@@ -594,6 +1084,13 @@
                         if (message.role !== 'User') {
                             markMessagesAsSeen();
                         }
+                    }
+                });
+                
+                // Register SessionEnded handler
+                ChatClient.onSessionEnded(function(data) {
+                    if (data.chatSessionId === chatSessionId) {
+                        handleSessionExpired();
                     }
                 });
                 
@@ -612,6 +1109,18 @@
                 });
                 
                 await initChat();
+                
+                const userLogoutBtn = document.getElementById('userLogoutBtn');
+                const userLogoutForm = document.getElementById('userLogoutForm');
+                if (userLogoutBtn && userLogoutForm) {
+                    userLogoutBtn.addEventListener('click', function() {
+                        if (typeof ChatClient !== 'undefined' && typeof ChatClient.stop === 'function') {
+                            ChatClient.stop().then(function() { userLogoutForm.submit(); });
+                        } else {
+                            userLogoutForm.submit();
+                        }
+                    });
+                }
             }
             
             document.addEventListener('DOMContentLoaded', init);

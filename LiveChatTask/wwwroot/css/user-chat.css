@@ -54,9 +54,39 @@ body {
     margin-top: 4px;
 }
 
+.chat-header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
 .chat-header-actions {
     display: flex;
     gap: 8px;
+}
+
+.session-timer {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+.timer-label {
+    opacity: 0.9;
+}
+
+.timer-value {
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.timer-unit {
+    opacity: 0.8;
+    font-size: 0.85rem;
 }
 
 .header-btn {
@@ -72,6 +102,85 @@ body {
 
 .header-btn:hover {
     background: rgba(255, 255, 255, 0.3);
+}
+
+.expired-session-message {
+    text-align: center;
+    padding: 2rem;
+    background: white;
+    border-radius: 12px;
+    margin: 1rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.expired-session-message .icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.expired-session-message h3 {
+    color: #ef4444;
+    margin: 0.5rem 0;
+}
+
+.expired-session-message p {
+    color: #6b7280;
+    margin: 0.5rem 0;
+}
+
+/* Expired session banner (above message input) */
+.expired-session-banner {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(239, 68, 68, 0.04));
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 12px;
+    margin: 0 1rem 1rem;
+    padding: 1rem 1.25rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.expired-banner-content {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1rem;
+}
+
+.expired-banner-content .expired-icon {
+    font-size: 1.5rem;
+}
+
+.expired-banner-content .expired-text {
+    flex: 1;
+    margin: 0;
+    font-weight: 500;
+    color: #4b5563;
+    font-size: 0.95rem;
+}
+
+.start-new-session-btn {
+    background: linear-gradient(135deg, var(--user-primary), var(--user-secondary));
+    color: white;
+    border: none;
+    padding: 0.6rem 1.25rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.35);
+}
+
+.start-new-session-btn:hover {
+    opacity: 0.95;
+}
+
+.start-new-session-btn:active {
+    transform: scale(0.98);
+}
+
+.start-new-session-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
 }
 
 /* Messages Container */

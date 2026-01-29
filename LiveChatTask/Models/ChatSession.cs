@@ -1,4 +1,4 @@
-﻿namespace LiveChatTask.Models
+namespace LiveChatTask.Models
 {
     public class ChatSession
     {
@@ -20,6 +20,12 @@
 
         // Timestamps
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        // Session start time (when the session actually started, defaults to CreatedAt)
+        public DateTime StartedAt { get; set; } = DateTime.UtcNow;
+
+        // Maximum duration for this session in minutes (populated from ChatSettings when session is created)
+        public int MaxDurationMinutes { get; set; } = 60;
 
         // Last message sent by user (for timeout logic)
         public DateTime LastUserMessageAt { get; set; } = DateTime.UtcNow;

@@ -87,6 +87,13 @@ namespace LiveChatTask.Controllers
                 await _hubContext.Clients.Group(chatSessionKey)
                     .SendAsync("ReceiveMessage", chatSessionKey, message.Id, userId, request.Text, message.Type.ToString(), role, sentAt, status);
 
+                // When a user sends a message, notify admin clients so notification badges update in real time.
+                if (role == "User" && !string.IsNullOrEmpty(result.SessionUserId) && result.UnreadCountForAdmin.HasValue)
+                {
+                    await _hubContext.Clients.Group(ChatHub.AdminPresenceGroup)
+                        .SendAsync("UnreadCountChanged", result.SessionUserId, result.UnreadCountForAdmin.Value);
+                }
+
                 return Ok(new
                 {
                     messageId = message.Id,
@@ -102,6 +109,14 @@ namespace LiveChatTask.Controllers
                     ? await _settingsService.GetMaxUserMessageLengthAsync()
                     : 5000;
                 return BadRequest(new { message = ex.Message, maxLength = maxLen });
+            }
+            catch (InvalidOperationException ex) when (ex.Message.Contains("expired", StringComparison.OrdinalIgnoreCase))
+            {
+                // Session expired - broadcast SessionEnded event and return 400
+                var chatSessionKey = request.ChatSessionId;
+                await _hubContext.Clients.Group(chatSessionKey)
+                    .SendAsync("SessionEnded", chatSessionKey);
+                return BadRequest(new { message = "Your chat session has expired" });
             }
             catch (UnauthorizedAccessException)
             {
@@ -182,6 +197,52 @@ namespace LiveChatTask.Controllers
         }
 
         /// <summary>
+        /// Returns session info including duration and remaining time.
+        /// GET: /api/chat/session-info?chatSessionId=...
+        /// </summary>
+        [HttpGet("session-info")]
+        public async Task<IActionResult> SessionInfo([FromQuery] string chatSessionId)
+        {
+            try
+            {
+                var requesterId = GetUserId();
+                if (string.IsNullOrWhiteSpace(requesterId))
+                {
+                    return Unauthorized();
+                }
+
+                var role = GetRole();
+                var session = await _chatService.GetSessionInfoAsync(chatSessionId, requesterId, role);
+                
+                if (session == null)
+                {
+                    return NotFound();
+                }
+
+                // Always use the current setting value (admin may have changed it)
+                var currentMaxDurationMinutes = await _settingsService.GetMaxSessionDurationMinutesAsync();
+                
+                var now = DateTime.UtcNow;
+                var elapsedMinutes = (now - session.StartedAt).TotalMinutes;
+                var remainingMinutes = Math.Max(0, currentMaxDurationMinutes - elapsedMinutes);
+                var isExpired = elapsedMinutes >= currentMaxDurationMinutes;
+
+                return Ok(new ChatSessionInfoResponse
+                {
+                    ChatSessionId = session.SessionKey,
+                    StartedAt = session.StartedAt,
+                    MaxDurationMinutes = currentMaxDurationMinutes,
+                    RemainingMinutes = remainingMinutes,
+                    IsExpired = isExpired
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Failed to get session info", error = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Returns a simple history of messages for a given chatSessionId (SessionKey).
         /// GET: /api/chat/history?chatSessionId=...
         /// </summary>
@@ -245,6 +306,17 @@ namespace LiveChatTask.Controllers
                     // Broadcast status change to all clients in this chat session group
                     await _hubContext.Clients.Group(request.ChatSessionId)
                         .SendAsync("MessageStatusChanged", request.ChatSessionId, messageIds.ToArray(), "Seen");
+
+                    // When admin marks as seen, notify admin clients to reset unread badge for this user
+                    if (role == "Admin")
+                    {
+                        var session = await _chatService.GetSessionInfoAsync(request.ChatSessionId, viewerId, role);
+                        if (session != null)
+                        {
+                            await _hubContext.Clients.Group(ChatHub.AdminPresenceGroup)
+                                .SendAsync("UnreadCountChanged", session.UserId, 0);
+                        }
+                    }
                 }
 
                 return Ok(new { messageIds });

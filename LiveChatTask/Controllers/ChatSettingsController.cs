@@ -26,6 +26,7 @@ namespace LiveChatTask.Controllers
             return Ok(new ChatSettingsResponse
             {
                 MaxUserMessageLength = settings.MaxUserMessageLength,
+                MaxSessionDurationMinutes = settings.MaxSessionDurationMinutes,
                 UpdatedAt = settings.UpdatedAt
             });
         }
@@ -40,11 +41,25 @@ namespace LiveChatTask.Controllers
                 return Unauthorized();
             }
 
-            var updated = await _settingsService.UpdateMaxUserMessageLengthAsync(request.MaxUserMessageLength, adminId);
+            var settings = await _settingsService.GetAsync();
+
+            // Update MaxUserMessageLength if provided
+            if (request.MaxUserMessageLength.HasValue)
+            {
+                settings = await _settingsService.UpdateMaxUserMessageLengthAsync(request.MaxUserMessageLength.Value, adminId);
+            }
+
+            // Update MaxSessionDurationMinutes if provided
+            if (request.MaxSessionDurationMinutes.HasValue)
+            {
+                settings = await _settingsService.UpdateMaxSessionDurationMinutesAsync(request.MaxSessionDurationMinutes.Value, adminId);
+            }
+
             return Ok(new ChatSettingsResponse
             {
-                MaxUserMessageLength = updated.MaxUserMessageLength,
-                UpdatedAt = updated.UpdatedAt
+                MaxUserMessageLength = settings.MaxUserMessageLength,
+                MaxSessionDurationMinutes = settings.MaxSessionDurationMinutes,
+                UpdatedAt = settings.UpdatedAt
             });
         }
     }

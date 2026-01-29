@@ -8,6 +8,8 @@ namespace LiveChatTask.Services
         Task<ChatSettings> GetAsync();
         Task<int> GetMaxUserMessageLengthAsync();
         Task<ChatSettings> UpdateMaxUserMessageLengthAsync(int maxUserMessageLength, string adminId);
+        Task<int> GetMaxSessionDurationMinutesAsync();
+        Task<ChatSettings> UpdateMaxSessionDurationMinutesAsync(int maxDurationMinutes, string adminId);
     }
 }
 

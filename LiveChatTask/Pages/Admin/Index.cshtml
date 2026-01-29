@@ -54,8 +54,8 @@
             </div>
             <div class="chat-actions">
                 <button type="button" onclick="location.reload()">🔄 Refresh</button>
-                <form method="post" asp-page-handler="Logout" style="display: inline;">
-                    <button type="submit">Logout</button>
+                <form id="adminLogoutForm" method="post" asp-page-handler="Logout" style="display: inline;">
+                    <button type="button" id="adminLogoutBtn">Logout</button>
                 </form>
             </div>
         </div>
@@ -109,10 +109,15 @@
                 <label>Max characters per message</label>
                 <input id="adminMaxCharsInput" type="number" value="500" min="10" max="5000" />
                 <div style="font-size: 0.85rem; color: #6b7280; margin-top: 4px;">Applies to user messages only.</div>
-                <div style="margin-top: 0.75rem;">
-                    <button id="adminSaveSettingsBtn" type="button" class="btn-primary">Save</button>
-                    <span id="adminSettingsStatus" style="margin-left: 8px; font-size: 0.85rem; color: #6b7280;"></span>
-                </div>
+            </div>
+            <div style="margin-bottom: 1rem;">
+                <label>Max session duration (minutes)</label>
+                <input id="adminMaxDurationInput" type="number" value="60" min="1" max="1440" />
+                <div style="font-size: 0.85rem; color: #6b7280; margin-top: 4px;">Maximum duration for user chat sessions (1-1440 minutes = 1 minute to 24 hours).</div>
+            </div>
+            <div style="margin-top: 0.75rem;">
+                <button id="adminSaveSettingsBtn" type="button" class="btn-primary">Save</button>
+                <span id="adminSettingsStatus" style="margin-left: 8px; font-size: 0.85rem; color: #6b7280;"></span>
             </div>
         </div>
     </div>
@@ -124,6 +129,7 @@
     <script>
 (function() {
     const openChats = {}; // chatSessionId => { userId, userLabel, panelEl }
+    const unreadByUserId = {}; // userId => unread count (for notification badges)
     let activeChatSessionId = null;
     let uploadedFilePath = null;
     let uploadedFileType = null;
@@ -153,6 +159,7 @@
     const usersContainer = document.getElementById('adminUsersContainer');
     const usersLoading = document.getElementById('adminUsersLoading');
     const maxCharsInput = document.getElementById('adminMaxCharsInput');
+    const maxDurationInput = document.getElementById('adminMaxDurationInput');
     const saveSettingsBtn = document.getElementById('adminSaveSettingsBtn');
     const settingsStatus = document.getElementById('adminSettingsStatus');
     
@@ -192,7 +199,20 @@
         }
     }
     
-    function setActiveChat(chatSessionId) {
+    function updateUnreadBadge(userId, count) {
+        unreadByUserId[userId] = count;
+        const badge = document.getElementById('unread-badge-' + userId);
+        if (badge) {
+            if (count > 0) {
+                badge.textContent = count > 99 ? '99+' : count;
+                badge.style.display = '';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+    }
+    
+    async function setActiveChat(chatSessionId) {
         activeChatSessionId = chatSessionId;
         messageInput.disabled = !chatSessionId;
         sendButton.disabled = !chatSessionId;
@@ -213,7 +233,13 @@
         const panel = openChats[chatSessionId]?.panelEl;
         if (panel) panel.scrollTop = panel.scrollHeight;
         
-        if (chatSessionId) markMessagesAsSeen(chatSessionId);
+        if (chatSessionId) {
+            await markMessagesAsSeen(chatSessionId);
+            const chat = openChats[chatSessionId];
+            if (chat && chat.userId) {
+                updateUnreadBadge(chat.userId, 0);
+            }
+        }
     }
     
     async function markMessagesAsSeen(chatSessionId) {
@@ -409,7 +435,7 @@
             await loadChatHistory(chatSessionId);
         }
         
-        setActiveChat(chatSessionId);
+        await setActiveChat(chatSessionId);
     }
     
     function closeChatTab(chatSessionId) {
@@ -446,8 +472,11 @@
             usersContainer.innerHTML = '';
             
             sessions.forEach(session => {
+                unreadByUserId[session.userId] = session.unreadCount || 0;
+                
                 const userCard = document.createElement('div');
                 userCard.className = 'user-card';
+                userCard.setAttribute('data-user-id', session.userId);
                 userCard.onclick = () => openChatForUser(session.userId, session.userNameOrEmail);
                 
                 const header = document.createElement('div');
@@ -475,12 +504,12 @@
                 header.appendChild(avatar);
                 header.appendChild(info);
                 
-                if (session.unreadCount > 0) {
-                    const badge = document.createElement('span');
-                    badge.className = 'unread-badge';
-                    badge.textContent = session.unreadCount;
-                    header.appendChild(badge);
-                }
+                const badge = document.createElement('span');
+                badge.className = 'unread-badge';
+                badge.id = 'unread-badge-' + session.userId;
+                badge.textContent = (session.unreadCount || 0) > 99 ? '99+' : (session.unreadCount || 0);
+                badge.style.display = (session.unreadCount || 0) > 0 ? '' : 'none';
+                header.appendChild(badge);
                 
                 userCard.appendChild(header);
                 usersContainer.appendChild(userCard);
@@ -524,13 +553,23 @@
             if (typeof data.maxUserMessageLength === 'number') {
                 maxCharsInput.value = data.maxUserMessageLength;
             }
+            if (typeof data.maxSessionDurationMinutes === 'number') {
+                maxDurationInput.value = data.maxSessionDurationMinutes;
+            }
         } catch { }
     }
     
     async function saveChatSettings() {
-        const value = parseInt(maxCharsInput.value, 10);
-        if (!Number.isFinite(value) || value < 10 || value > 5000) {
-            settingsStatus.textContent = 'Invalid value (10-5000).';
+        const maxCharsValue = parseInt(maxCharsInput.value, 10);
+        const maxDurationValue = parseInt(maxDurationInput.value, 10);
+        
+        if (!Number.isFinite(maxCharsValue) || maxCharsValue < 10 || maxCharsValue > 5000) {
+            settingsStatus.textContent = 'Invalid max chars (10-5000).';
+            return;
+        }
+        
+        if (!Number.isFinite(maxDurationValue) || maxDurationValue < 1 || maxDurationValue > 1440) {
+            settingsStatus.textContent = 'Invalid max duration (1-1440 minutes).';
             return;
         }
         
@@ -540,7 +579,10 @@
             const resp = await fetch('/api/settings/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ maxUserMessageLength: value }),
+                body: JSON.stringify({ 
+                    maxUserMessageLength: maxCharsValue,
+                    maxSessionDurationMinutes: maxDurationValue
+                }),
                 credentials: 'include'
             });
             if (!resp.ok) {
@@ -551,6 +593,9 @@
             settingsStatus.textContent = 'Saved.';
             if (typeof data.maxUserMessageLength === 'number') {
                 maxCharsInput.value = data.maxUserMessageLength;
+            }
+            if (typeof data.maxSessionDurationMinutes === 'number') {
+                maxDurationInput.value = data.maxSessionDurationMinutes;
             }
         } catch {
             settingsStatus.textContent = 'Failed to save.';
@@ -772,14 +817,62 @@
             const data = await response.json();
             
             // Send voice message via SignalR
-            await ChatClient.sendMessageTo(activeChatSessionId, data.filePath, 'Voice');
-            
-        } catch (err) {
-            alert('Voice upload failed: ' + err.message);
-        } finally {
-            sendButton.disabled = !activeChatSessionId;
-        }
-    }
+                    await ChatClient.sendMessageTo(activeChatSessionId, data.filePath, 'Voice');
+                    
+                } catch (err) {
+                    // Check if error is due to session not found (user may have started new session)
+                    if (err.message && (err.message.includes('not found') || err.message.includes('Chat session'))) {
+                        const chat = openChats[activeChatSessionId];
+                        if (chat && chat.userId) {
+                            try {
+                                const oldSessionId = activeChatSessionId;
+                                await ChatClient.leaveChat(oldSessionId);
+                                
+                                const response = await fetch('/api/chat/open', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ userId: chat.userId }),
+                                    credentials: 'include'
+                                });
+                                
+                                if (response.ok) {
+                                    const body = await response.json();
+                                    const newSessionId = body.chatSessionId;
+                                    
+                                    if (newSessionId && newSessionId !== oldSessionId) {
+                                        const oldChat = openChats[oldSessionId];
+                                        delete openChats[oldSessionId];
+                                        
+                                        const tabBtn = tabs.querySelector(`.chat-tab[data-chat-session-id="${oldSessionId}"]`);
+                                        if (tabBtn) {
+                                            tabBtn.setAttribute('data-chat-session-id', newSessionId);
+                                        }
+                                        
+                                        if (oldChat && oldChat.panelEl) {
+                                            oldChat.panelEl.setAttribute('data-chat-session-id', newSessionId);
+                                            openChats[newSessionId] = { userId: chat.userId, userLabel: chat.userLabel, panelEl: oldChat.panelEl };
+                                        }
+                                        
+                                        await ChatClient.joinChat(newSessionId);
+                                        activeChatSessionId = newSessionId;
+                                        setActiveChat(newSessionId);
+                                        await loadChatHistory(newSessionId);
+                                        
+                                        // Retry sending voice message
+                                        await ChatClient.sendMessageTo(newSessionId, data.filePath, 'Voice');
+                                        return;
+                                    }
+                                }
+                            } catch (refreshErr) {
+                                console.error('Failed to refresh session:', refreshErr);
+                            }
+                        }
+                    }
+                    alert('Voice upload failed: ' + err.message);
+                } finally {
+                    sendButton.disabled = !activeChatSessionId;
+                }
+            }
     
     // Voice recording event listeners
     voiceRecordBtn.addEventListener('click', startVoiceRecording);
@@ -806,6 +899,73 @@
             messageInput.value = '';
             messageInput.style.height = 'auto';
         } catch (err) {
+            // Check if error is due to session not found (user may have started new session)
+            if (err.message && (err.message.includes('not found') || err.message.includes('Chat session'))) {
+                const chat = openChats[activeChatSessionId];
+                if (chat && chat.userId) {
+                    // Refresh the session for this user
+                    try {
+                        const oldSessionId = activeChatSessionId;
+                        await ChatClient.leaveChat(oldSessionId);
+                        
+                        // Get new session
+                        const response = await fetch('/api/chat/open', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ userId: chat.userId }),
+                            credentials: 'include'
+                        });
+                        
+                        if (response.ok) {
+                            const body = await response.json();
+                            const newSessionId = body.chatSessionId;
+                            
+                            if (newSessionId && newSessionId !== oldSessionId) {
+                                // Update openChats
+                                const oldChat = openChats[oldSessionId];
+                                delete openChats[oldSessionId];
+                                
+                                // Update tab
+                                const tabBtn = tabs.querySelector(`.chat-tab[data-chat-session-id="${oldSessionId}"]`);
+                                if (tabBtn) {
+                                    tabBtn.setAttribute('data-chat-session-id', newSessionId);
+                                }
+                                
+                                // Update panel
+                                if (oldChat && oldChat.panelEl) {
+                                    oldChat.panelEl.setAttribute('data-chat-session-id', newSessionId);
+                                    openChats[newSessionId] = { userId: chat.userId, userLabel: chat.userLabel, panelEl: oldChat.panelEl };
+                                }
+                                
+                                // Join new SignalR group
+                                await ChatClient.joinChat(newSessionId);
+                                
+                                // Update active session
+                                activeChatSessionId = newSessionId;
+                                setActiveChat(newSessionId);
+                                
+                                // Reload history for new session
+                                await loadChatHistory(newSessionId);
+                                
+                                // Retry sending the message
+                                if (uploadedFilePath) {
+                                    const messageType = uploadedFileType === 'image' ? 'Image' : 'File';
+                                    await ChatClient.sendMessageTo(newSessionId, uploadedFilePath, messageType);
+                                    clearFileUpload();
+                                } else {
+                                    await ChatClient.sendMessageTo(newSessionId, text);
+                                }
+                                
+                                messageInput.value = '';
+                                messageInput.style.height = 'auto';
+                                return; // Success, exit early
+                            }
+                        }
+                    } catch (refreshErr) {
+                        console.error('Failed to refresh session:', refreshErr);
+                    }
+                }
+            }
             alert('Failed to send: ' + err.message);
         } finally {
             sendButton.disabled = !activeChatSessionId;
@@ -826,11 +986,90 @@
     
     // Initialize
     async function init() {
-        await ChatClient.init(function(message) {
+        await ChatClient.init(async function(message) {
+            // Check if we have this session open
             if (openChats[message.chatSessionId]) {
                 renderMessage(message, openChats[message.chatSessionId].panelEl);
-                if (message.role !== 'Admin' && message.chatSessionId === activeChatSessionId) {
-                    markMessagesAsSeen(message.chatSessionId);
+                if (message.role !== 'Admin') {
+                    if (message.chatSessionId === activeChatSessionId) {
+                        await markMessagesAsSeen(message.chatSessionId);
+                    } else {
+                        // New message in a chat we're not viewing - increment unread badge
+                        const userId = openChats[message.chatSessionId].userId || message.fromUserId;
+                        if (userId) {
+                            const count = (unreadByUserId[userId] || 0) + 1;
+                            updateUnreadBadge(userId, count);
+                        }
+                    }
+                }
+            } else {
+                // Message received for a session we don't have open - user may have started new session
+                // Try to find if we have a chat open for this user (by fromUserId)
+                const fromUserId = message.fromUserId;
+                let matchingChat = null;
+                let oldSessionId = null;
+                
+                for (const [sessionId, chat] of Object.entries(openChats)) {
+                    if (chat.userId === fromUserId) {
+                        matchingChat = chat;
+                        oldSessionId = sessionId;
+                        break;
+                    }
+                }
+                
+                if (matchingChat && oldSessionId !== message.chatSessionId) {
+                    // User has a new session - refresh it
+                    try {
+                        await ChatClient.leaveChat(oldSessionId);
+                        
+                        const response = await fetch('/api/chat/open', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ userId: matchingChat.userId }),
+                            credentials: 'include'
+                        });
+                        
+                        if (response.ok) {
+                            const body = await response.json();
+                            const newSessionId = body.chatSessionId;
+                            
+                            if (newSessionId === message.chatSessionId) {
+                                // Update openChats
+                                const oldChat = openChats[oldSessionId];
+                                delete openChats[oldSessionId];
+                                
+                                // Update tab
+                                const tabBtn = tabs.querySelector(`.chat-tab[data-chat-session-id="${oldSessionId}"]`);
+                                if (tabBtn) {
+                                    tabBtn.setAttribute('data-chat-session-id', newSessionId);
+                                }
+                                
+                                // Update panel
+                                if (oldChat && oldChat.panelEl) {
+                                    oldChat.panelEl.setAttribute('data-chat-session-id', newSessionId);
+                                    openChats[newSessionId] = { userId: matchingChat.userId, userLabel: matchingChat.userLabel, panelEl: oldChat.panelEl };
+                                }
+                                
+                                // Join new SignalR group
+                                await ChatClient.joinChat(newSessionId);
+                                
+                                // Update active session if it was the old one
+                                if (activeChatSessionId === oldSessionId) {
+                                    activeChatSessionId = newSessionId;
+                                    setActiveChat(newSessionId);
+                                }
+                                
+                                // Reload history and render the message
+                                await loadChatHistory(newSessionId);
+                                renderMessage(message, openChats[newSessionId].panelEl);
+                                if (message.role !== 'Admin' && newSessionId === activeChatSessionId) {
+                                    markMessagesAsSeen(newSessionId);
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Failed to refresh session on message receive:', err);
+                    }
                 }
             }
         });
@@ -869,6 +1108,18 @@
         await loadChatSettings();
         
         if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', saveChatSettings);
+        
+        const adminLogoutBtn = document.getElementById('adminLogoutBtn');
+        const adminLogoutForm = document.getElementById('adminLogoutForm');
+        if (adminLogoutBtn && adminLogoutForm) {
+            adminLogoutBtn.addEventListener('click', function() {
+                if (typeof ChatClient !== 'undefined' && typeof ChatClient.stop === 'function') {
+                    ChatClient.stop().then(function() { adminLogoutForm.submit(); });
+                } else {
+                    adminLogoutForm.submit();
+                }
+            });
+        }
         
         // Restore tabs
         const toRestore = loadOpenChatsFromStorage();

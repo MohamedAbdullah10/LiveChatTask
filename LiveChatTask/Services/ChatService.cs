@@ -16,14 +16,19 @@ namespace LiveChatTask.Services
     public class ChatService : IChatService
     {
         private readonly AppDbContext _context;
+        private readonly IChatSettingsService _settingsService;
 
-        public ChatService(AppDbContext context)
+        public ChatService(AppDbContext context, IChatSettingsService settingsService)
         {
             _context = context;
+            _settingsService = settingsService;
         }
 
         public async Task<ChatSession> GetOrCreateSessionAsync(string userId, string adminId)
         {
+            var now = DateTime.UtcNow;
+            var defaultMaxDurationMinutes = await _settingsService.GetMaxSessionDurationMinutesAsync();
+
             // Prefer an existing session already assigned to this admin; otherwise allow claiming an unassigned session.
             var existing = await _context.ChatSessions
                 .FirstOrDefaultAsync(cs =>
@@ -43,6 +48,20 @@ namespace LiveChatTask.Services
                     existing.AdminId = adminId;
                 }
 
+                // Update MaxDurationMinutes to match current setting (admin may have changed it)
+                if (existing.MaxDurationMinutes != defaultMaxDurationMinutes)
+                {
+                    existing.MaxDurationMinutes = defaultMaxDurationMinutes;
+                }
+
+                // Ensure StartedAt is set
+                if (existing.StartedAt == default || existing.StartedAt == DateTime.MinValue)
+                {
+                    existing.StartedAt = existing.CreatedAt > now ? now : existing.CreatedAt;
+                }
+
+                // Don't reset expired sessions automatically - let expiration be enforced
+                // The expiration will be checked in SendMessageAsync and GetSessionInfoAsync
                 await _context.SaveChangesAsync();
                 return existing;
             }
@@ -53,8 +72,10 @@ namespace LiveChatTask.Services
                 UserId = userId,
                 AdminId = adminId,
                 IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                LastUserMessageAt = DateTime.UtcNow
+                CreatedAt = now,
+                StartedAt = now,
+                MaxDurationMinutes = defaultMaxDurationMinutes,
+                LastUserMessageAt = now
             };
 
             _context.ChatSessions.Add(session);
@@ -65,6 +86,9 @@ namespace LiveChatTask.Services
 
         public async Task<ChatSession> GetOrCreateUserSessionAsync(string userId)
         {
+            var now = DateTime.UtcNow;
+            var defaultMaxDurationMinutes = await _settingsService.GetMaxSessionDurationMinutesAsync();
+
             var existing = await _context.ChatSessions
                 .FirstOrDefaultAsync(cs => cs.IsActive && cs.UserId == userId);
 
@@ -73,9 +97,47 @@ namespace LiveChatTask.Services
                 if (string.IsNullOrWhiteSpace(existing.SessionKey))
                 {
                     existing.SessionKey = Guid.NewGuid().ToString("N");
-                    await _context.SaveChangesAsync();
                 }
 
+                // Update MaxDurationMinutes to match current setting (admin may have changed it)
+                if (existing.MaxDurationMinutes != defaultMaxDurationMinutes)
+                {
+                    existing.MaxDurationMinutes = defaultMaxDurationMinutes;
+                }
+
+                // Ensure StartedAt is set
+                if (existing.StartedAt == default || existing.StartedAt == DateTime.MinValue)
+                {
+                    existing.StartedAt = existing.CreatedAt > now ? now : existing.CreatedAt;
+                }
+
+                // If current session is expired, create a new session (for "Start New Chat Session" flow)
+                if (defaultMaxDurationMinutes > 0)
+                {
+                    var elapsedMinutes = (now - existing.StartedAt).TotalMinutes;
+                    if (elapsedMinutes >= defaultMaxDurationMinutes)
+                    {
+                        existing.IsActive = false;
+                        await _context.SaveChangesAsync();
+
+                        var newSession = new ChatSession
+                        {
+                            SessionKey = Guid.NewGuid().ToString("N"),
+                            UserId = userId,
+                            AdminId = null,
+                            IsActive = true,
+                            CreatedAt = now,
+                            StartedAt = now,
+                            MaxDurationMinutes = defaultMaxDurationMinutes,
+                            LastUserMessageAt = now
+                        };
+                        _context.ChatSessions.Add(newSession);
+                        await _context.SaveChangesAsync();
+                        return newSession;
+                    }
+                }
+
+                await _context.SaveChangesAsync();
                 return existing;
             }
 
@@ -85,8 +147,10 @@ namespace LiveChatTask.Services
                 UserId = userId,
                 AdminId = null,
                 IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                LastUserMessageAt = DateTime.UtcNow
+                CreatedAt = now,
+                StartedAt = now,
+                MaxDurationMinutes = defaultMaxDurationMinutes,
+                LastUserMessageAt = now
             };
 
             _context.ChatSessions.Add(session);
@@ -215,6 +279,36 @@ namespace LiveChatTask.Services
                 }
             }
 
+            // Check session duration for User messages (admins can always send)
+            if (command.Role == "User")
+            {
+                // Ensure StartedAt is set (for existing sessions created before this feature)
+                if (chatSession.StartedAt == default)
+                {
+                    chatSession.StartedAt = chatSession.CreatedAt;
+                }
+
+                // Always use the CURRENT setting value (admin may have changed it)
+                var currentMaxDurationMinutes = await _settingsService.GetMaxSessionDurationMinutesAsync();
+                
+                // Update stored value to match current setting
+                if (chatSession.MaxDurationMinutes != currentMaxDurationMinutes)
+                {
+                    chatSession.MaxDurationMinutes = currentMaxDurationMinutes;
+                    await _context.SaveChangesAsync();
+                }
+
+                // Check expiration using CURRENT setting value
+                if (currentMaxDurationMinutes > 0)
+                {
+                    var elapsedMinutes = (DateTime.UtcNow - chatSession.StartedAt).TotalMinutes;
+                    if (elapsedMinutes >= currentMaxDurationMinutes)
+                    {
+                        throw new InvalidOperationException("Your chat session has expired");
+                    }
+                }
+            }
+
             var message = new Message
             {
                 SenderId = command.SenderId,
@@ -232,11 +326,20 @@ namespace LiveChatTask.Services
 
             await _context.SaveChangesAsync();
 
+            int? unreadCountForAdmin = null;
+            if (command.Role == "User")
+            {
+                unreadCountForAdmin = await _context.Messages
+                    .CountAsync(m => m.ChatSessionId == chatSession.Id && m.SenderId == chatSession.UserId && !m.IsSeen);
+            }
+
             return new SendMessageResult
             {
                 Message = message,
                 ChatSessionKey = chatSession.SessionKey,
-                Role = command.Role
+                Role = command.Role,
+                SessionUserId = command.Role == "User" ? chatSession.UserId : null,
+                UnreadCountForAdmin = unreadCountForAdmin
             };
         }
 
@@ -365,6 +468,60 @@ namespace LiveChatTask.Services
             }
 
             return messageIds;
+        }
+
+        public async Task<ChatSession?> GetSessionInfoAsync(string chatSessionKey, string requesterId, string requesterRole)
+        {
+            if (string.IsNullOrWhiteSpace(chatSessionKey) || string.IsNullOrWhiteSpace(requesterId))
+            {
+                return null;
+            }
+
+            var chatSession = await _context.ChatSessions
+                .FirstOrDefaultAsync(cs => cs.IsActive && cs.SessionKey == chatSessionKey);
+
+            if (chatSession == null)
+            {
+                return null;
+            }
+
+            // Authorization check
+            if (requesterRole == "User" && chatSession.UserId != requesterId)
+            {
+                return null;
+            }
+
+            if (requesterRole == "Admin")
+            {
+                if (chatSession.AdminId != null && chatSession.AdminId != requesterId)
+                {
+                    return null;
+                }
+            }
+
+            var now = DateTime.UtcNow;
+            // Always use the current setting value (admin may have changed it)
+            var currentMaxDurationMinutes = await _settingsService.GetMaxSessionDurationMinutesAsync();
+            
+            // Update stored value to match current setting (for consistency)
+            if (chatSession.MaxDurationMinutes != currentMaxDurationMinutes)
+            {
+                chatSession.MaxDurationMinutes = currentMaxDurationMinutes;
+            }
+
+            // Ensure StartedAt is set
+            if (chatSession.StartedAt == default || chatSession.StartedAt == DateTime.MinValue)
+            {
+                // If StartedAt was never set, use CreatedAt or now (whichever is more recent)
+                chatSession.StartedAt = chatSession.CreatedAt > now ? now : chatSession.CreatedAt;
+            }
+
+            // Don't reset StartedAt here - let the expiration stand
+            // The expiration check is done in the controller/UI
+            // Save any changes (MaxDurationMinutes update)
+            await _context.SaveChangesAsync();
+
+            return chatSession;
         }
     }
 }

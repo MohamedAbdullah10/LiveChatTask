@@ -18,6 +18,8 @@ namespace LiveChatTask.Services
         Task<IReadOnlyList<ChatHistoryItemModel>> GetHistoryAsync(string requesterId, string requesterRole, string chatSessionKey);
 
         Task<IReadOnlyList<int>> MarkMessagesAsSeenAsync(string chatSessionKey, string viewerId, string viewerRole);
+
+        Task<ChatSession?> GetSessionInfoAsync(string chatSessionKey, string requesterId, string requesterRole);
     }
 }
 

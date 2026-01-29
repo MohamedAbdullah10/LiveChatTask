@@ -10,6 +10,8 @@ var ChatClient = (function () {
     let receiveHandler = null;
     let presenceHandler = null;
     let messageStatusHandler = null;
+    let sessionEndedHandler = null;
+    let unreadCountChangedHandler = null;
     const joinedSessions = new Set();
 
     async function ensureConnection() {
@@ -63,6 +65,23 @@ var ChatClient = (function () {
                 }
             });
 
+            connection.on("SessionEnded", function (chatSessionId) {
+                if (typeof sessionEndedHandler === "function") {
+                    sessionEndedHandler({
+                        chatSessionId
+                    });
+                }
+            });
+
+            connection.on("UnreadCountChanged", function (userId, count) {
+                if (typeof unreadCountChangedHandler === "function") {
+                    unreadCountChangedHandler({
+                        userId,
+                        count
+                    });
+                }
+            });
+
             connection.onclose(function (error) {
                 console.warn("Chat connection closed.", error || "");
             });
@@ -96,6 +115,14 @@ var ChatClient = (function () {
         messageStatusHandler = handler;
     }
 
+    function onSessionEnded(handler) {
+        sessionEndedHandler = handler;
+    }
+
+    function onUnreadCountChanged(handler) {
+        unreadCountChangedHandler = handler;
+    }
+
     async function joinChat(chatSessionId) {
         await ensureConnection();
         if (!chatSessionId) {
@@ -114,6 +141,34 @@ var ChatClient = (function () {
         } catch (err) {
             console.error("Failed to join chat session:", err);
             throw err;
+        }
+    }
+
+    async function leaveChat(chatSessionId) {
+        if (!chatSessionId || !connection) return;
+        try {
+            await connection.invoke("LeaveChat", chatSessionId);
+            joinedSessions.delete(chatSessionId);
+            if (currentSessionId === chatSessionId) {
+                currentSessionId = null;
+            }
+            console.log("Left chat session:", chatSessionId);
+        } catch (err) {
+            console.error("Failed to leave chat session:", err);
+        }
+    }
+
+    async function stop() {
+        if (!connection) return;
+        try {
+            await connection.stop();
+        } catch (err) {
+            console.warn("SignalR stop:", err);
+        } finally {
+            connection = null;
+            connectionPromise = null;
+            joinedSessions.clear();
+            currentSessionId = null;
         }
     }
 
@@ -163,8 +218,12 @@ var ChatClient = (function () {
         init,
         initConnection,
         joinChat,
+        leaveChat,
+        stop,
         onPresenceChanged,
         onMessageStatusChanged,
+        onSessionEnded,
+        onUnreadCountChanged,
         joinAdminPresence: async function () {
             await ensureConnection();
             try {
