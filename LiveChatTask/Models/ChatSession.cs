@@ -30,6 +30,9 @@ namespace LiveChatTask.Models
         // Last message sent by user (for timeout logic)
         public DateTime LastUserMessageAt { get; set; } = DateTime.UtcNow;
 
+        // When the idle termination message was sent (null until sent)
+        public DateTime? IdleTerminationSentAt { get; set; }
+
         // Messages in this session
         public ICollection<Message> Messages { get; set; }
     }

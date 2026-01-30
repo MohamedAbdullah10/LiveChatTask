@@ -267,6 +267,21 @@
     }
     
     function renderMessage(message, panelEl) {
+        if (message.messageType === 'System' || message.role === 'System') {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message message-system';
+            messageDiv.setAttribute('data-message-id', message.messageId || '');
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content message-system-content';
+            const textP = document.createElement('p');
+            textP.className = 'message-text message-system-text';
+            textP.textContent = message.messageText || '';
+            contentDiv.appendChild(textP);
+            messageDiv.appendChild(contentDiv);
+            panelEl.appendChild(messageDiv);
+            panelEl.scrollTop = panelEl.scrollHeight;
+            return;
+        }
         const isAdmin = message.role === 'Admin';
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${isAdmin ? 'sent' : 'received'}`;
@@ -1100,6 +1115,21 @@
                         statusSpan.textContent = `${statusIcon} ${statusText}`;
                     }
                 });
+            }
+        });
+        
+        ChatClient.onSessionEnded(function(event) {
+            if (event.chatSessionId === activeChatSessionId) {
+                messageInput.disabled = true;
+                sendButton.disabled = true;
+                const panel = openChats[activeChatSessionId]?.panelEl;
+                if (panel) {
+                    const notice = document.createElement('div');
+                    notice.className = 'chat-ended-notice';
+                    notice.textContent = 'Chat ended.';
+                    notice.style.cssText = 'text-align:center; color:#6b7280; padding:8px; font-size:0.9rem;';
+                    panel.appendChild(notice);
+                }
             }
         });
         

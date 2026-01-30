@@ -112,10 +112,10 @@ namespace LiveChatTask.Controllers
             }
             catch (InvalidOperationException ex) when (ex.Message.Contains("expired", StringComparison.OrdinalIgnoreCase))
             {
-                // Session expired - broadcast SessionEnded event and return 400
+                // Session expired (max duration) - broadcast SessionEnded with reason and return 400
                 var chatSessionKey = request.ChatSessionId;
                 await _hubContext.Clients.Group(chatSessionKey)
-                    .SendAsync("SessionEnded", chatSessionKey);
+                    .SendAsync("SessionEnded", chatSessionKey, "DurationExpired");
                 return BadRequest(new { message = "Your chat session has expired" });
             }
             catch (UnauthorizedAccessException)
@@ -340,7 +340,7 @@ namespace LiveChatTask.Controllers
         /// POST: /api/chat/upload-file
         /// </summary>
         [HttpPost("upload-file")]
-        public async Task<IActionResult> UploadFile([FromForm] IFormFile file)
+        public async Task<IActionResult> UploadFile( IFormFile file)
         {
             try
             {
@@ -375,7 +375,7 @@ namespace LiveChatTask.Controllers
         /// POST: /api/chat/upload-voice
         /// </summary>
         [HttpPost("upload-voice")]
-        public async Task<IActionResult> UploadVoice([FromForm] IFormFile file)
+        public async Task<IActionResult> UploadVoice( IFormFile file)
         {
             try
             {

@@ -7,7 +7,8 @@ namespace LiveChatTask.Models
         Text,
         Image,
         File,
-        Voice
+        Voice,
+        System
     }
 
     public class Message

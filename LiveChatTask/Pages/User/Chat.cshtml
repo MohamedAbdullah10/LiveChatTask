@@ -167,6 +167,23 @@
             }
             
             function renderMessage(message) {
+                if (message.messageType === 'System' || message.role === 'System') {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'message message-system';
+                    messageDiv.setAttribute('data-message-id', message.messageId || '');
+                    const contentDiv = document.createElement('div');
+                    contentDiv.className = 'message-content message-system-content';
+                    const textP = document.createElement('p');
+                    textP.className = 'message-text message-system-text';
+                    textP.textContent = message.messageText || '';
+                    contentDiv.appendChild(textP);
+                    messageDiv.appendChild(contentDiv);
+                    const emptyState = messagesList.querySelector('.empty-chat-state');
+                    if (emptyState) emptyState.remove();
+                    messagesList.appendChild(messageDiv);
+                    messagesWrapper.scrollTop = messagesWrapper.scrollHeight;
+                    return;
+                }
                 const isUser = message.role === 'User';
                 const messageDiv = document.createElement('div');
                 messageDiv.className = `message ${isUser ? 'user-message' : 'admin-message'}`;
@@ -222,7 +239,10 @@
                     bubble.appendChild(fileLink);
                 } else if (message.messageType === 'Voice') {
                     const audio = document.createElement('audio');
-                    audio.src = message.messageText;
+                    let voiceUrl = message.messageText || '';
+                    if (voiceUrl && !voiceUrl.startsWith('/') && !voiceUrl.startsWith('http'))
+                        voiceUrl = '/' + voiceUrl;
+                    audio.src = voiceUrl;
                     audio.controls = true;
                     audio.className = 'message-voice';
                     audio.preload = 'metadata';
@@ -314,7 +334,7 @@
                     const sessionInfo = await response.json();
                     
                     if (sessionInfo.isExpired) {
-                        handleSessionExpired();
+                        handleSessionExpired('DurationExpired');
                         return;
                     }
                     
@@ -343,7 +363,7 @@
                             if (resp.ok) {
                                 const info = await resp.json();
                                 if (info.isExpired) {
-                                    handleSessionExpired();
+                                    handleSessionExpired('DurationExpired');
                                 } else {
                                     updateTimerDisplay(info.remainingMinutes);
                                     // If less than 1 minute remaining, check more frequently (every 2 seconds)
@@ -361,7 +381,7 @@
                                             if (resp2.ok) {
                                                 const info2 = await resp2.json();
                                                 if (info2.isExpired) {
-                                                    handleSessionExpired();
+                                                    handleSessionExpired('DurationExpired');
                                                 } else {
                                                     updateTimerDisplay(info2.remainingMinutes);
                                                 }
@@ -385,12 +405,13 @@
                 
                 // Check if session expired (remainingMinutes <= 0)
                 if (remainingMinutes <= 0 && !sessionExpired) {
-                    handleSessionExpired();
+                    handleSessionExpired('DurationExpired');
                 }
             }
             
-            function handleSessionExpired() {
+            function handleSessionExpired(reason) {
                 sessionExpired = true;
+                const isIdleTerminated = reason === 'IdleTerminated';
                 
                 // Stop timer updates
                 if (sessionTimerInterval) {
@@ -409,11 +430,21 @@
                 const sendBtn = document.getElementById('sendBtn');
                 if (messageInput) {
                     messageInput.disabled = true;
-                    messageInput.placeholder = 'Your chat session has expired';
+                    messageInput.placeholder = isIdleTerminated
+                        ? 'The chat was terminated because we did not receive a response from you.'
+                        : 'Your chat session has expired';
                 }
                 if (sendBtn) {
                     sendBtn.disabled = true;
                 }
+                
+                const inlineMessage = isIdleTerminated
+                    ? 'The chat was terminated because we did not receive a response from you. Click "Start New Chat Session" below to continue.'
+                    : 'Your chat session has expired. Click "Start New Chat Session" below to continue.';
+                const bannerMessage = isIdleTerminated
+                    ? 'The chat was terminated because we did not receive a response from you.'
+                    : 'Your chat session has expired.';
+                const titleText = isIdleTerminated ? 'Chat Terminated' : 'Session Expired';
                 
                 // Show expiration message in chat area (with id so we can remove it when starting new session)
                 const messagesList = document.getElementById('messagesList');
@@ -421,13 +452,17 @@
                     const expiredMsg = document.createElement('div');
                     expiredMsg.id = 'expiredSessionMessage';
                     expiredMsg.className = 'expired-session-message';
-                    expiredMsg.innerHTML = '<div class="icon">⏰</div><h3>Session Expired</h3><p>Your chat session has expired. Click "Start New Chat Session" below to continue.</p>';
+                    expiredMsg.innerHTML = '<div class="icon">⏰</div><h3>' + titleText + '</h3><p>' + inlineMessage + '</p>';
                     messagesList.appendChild(expiredMsg);
                 }
                 
-                // Show expired session banner with Start New Chat Session button
+                // Show expired session banner and set text by reason
                 const banner = document.getElementById('expiredSessionBanner');
                 if (banner) {
+                    const bannerText = banner.querySelector('.expired-text');
+                    if (bannerText) {
+                        bannerText.textContent = bannerMessage;
+                    }
                     banner.classList.remove('d-none');
                 }
             }
@@ -830,7 +865,7 @@
                 } catch (err) {
                     // Check if error is due to session expiration
                     if (err.message && (err.message.includes('expired') || err.message.includes('session'))) {
-                        handleSessionExpired();
+                        handleSessionExpired('DurationExpired');
                         alert('Your chat session has expired. Please refresh the page to start a new session.');
                     } else {
                         alert('File upload failed: ' + err.message);
@@ -842,159 +877,6 @@
                     }
                 }
             });
-            
-            // Voice recording
-            async function startVoiceRecording() {
-                if (sessionExpired) {
-                    alert('Your chat session has expired. Please refresh the page to start a new session.');
-                    return;
-                }
-                
-                try {
-                    if (!chatSessionId) {
-                        alert('Please wait for chat to initialize.');
-                        return;
-                    }
-                    
-                    // Request microphone permission
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    recordingStream = stream;
-                    
-                    // Determine MIME type (prefer webm with opus codec)
-                    let mimeType = 'audio/webm;codecs=opus';
-                    if (!MediaRecorder.isTypeSupported(mimeType)) {
-                        mimeType = 'audio/webm';
-                        if (!MediaRecorder.isTypeSupported(mimeType)) {
-                            mimeType = ''; // Use browser default
-                        }
-                    }
-                    
-                    // Create MediaRecorder
-                    mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
-                    audioChunks = [];
-                    
-                    mediaRecorder.ondataavailable = (event) => {
-                        if (event.data.size > 0) {
-                            audioChunks.push(event.data);
-                        }
-                    };
-                    
-                    mediaRecorder.onstop = async () => {
-                        const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
-                        await uploadVoiceRecording(audioBlob);
-                        
-                        // Stop all tracks
-                        if (recordingStream) {
-                            recordingStream.getTracks().forEach(track => track.stop());
-                            recordingStream = null;
-                        }
-                    };
-                    
-                    mediaRecorder.onerror = (event) => {
-                        console.error('MediaRecorder error:', event);
-                        alert('Recording error occurred. Please try again.');
-                        cancelVoiceRecording();
-                    };
-                    
-                    // Start recording
-                    mediaRecorder.start(1000); // Collect data every second
-                    recordingStartTime = Date.now();
-                    voiceRecordingIndicator.classList.remove('d-none');
-                    
-                    // Update timer
-                    recordingTimer = setInterval(() => {
-                        if (recordingStartTime) {
-                            const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
-                            const minutes = Math.floor(elapsed / 60);
-                            const seconds = elapsed % 60;
-                            recordingTimerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-                        }
-                    }, 100);
-                } catch (err) {
-                    console.error('Error starting recording:', err);
-                    alert('Failed to start recording: ' + err.message);
-                    cancelVoiceRecording();
-                }
-            }
-            
-            function stopVoiceRecording() {
-                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                    mediaRecorder.stop();
-                }
-                cancelVoiceRecording();
-            }
-            
-            function cancelVoiceRecording() {
-                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                    mediaRecorder.stop();
-                }
-                if (recordingStream) {
-                    recordingStream.getTracks().forEach(track => track.stop());
-                    recordingStream = null;
-                }
-                audioChunks = [];
-                voiceRecordingIndicator.classList.add('d-none');
-                recordingTimerEl.textContent = '00:00';
-                if (recordingTimer) {
-                    clearInterval(recordingTimer);
-                    recordingTimer = null;
-                }
-                recordingStartTime = null;
-            }
-            
-            async function uploadVoiceRecording(audioBlob) {
-                if (sessionExpired) {
-                    alert('Your chat session has expired. Please refresh the page to start a new session.');
-                    return;
-                }
-                
-                try {
-                    sendBtn.disabled = true;
-                    
-                    const formData = new FormData();
-                    // Determine file extension from MIME type
-                    let extension = 'webm';
-                    if (audioBlob.type.includes('ogg')) extension = 'ogg';
-                    else if (audioBlob.type.includes('mp4') || audioBlob.type.includes('m4a')) extension = 'm4a';
-                    else if (audioBlob.type.includes('wav')) extension = 'wav';
-                    
-                    const fileName = `voice_${Date.now()}.${extension}`;
-                    formData.append('file', audioBlob, fileName);
-                    
-                    const response = await fetch('/api/chat/upload-voice', {
-                        method: 'POST',
-                        body: formData,
-                        credentials: 'include'
-                    });
-                    
-                    if (!response.ok) {
-                        const error = await response.json();
-                        throw new Error(error.message || 'Upload failed');
-                    }
-                    
-                    const data = await response.json();
-                    
-                    // Send voice message via SignalR
-                    if (!chatSessionId) {
-                        alert('Chat session not initialized. Please wait...');
-                        return;
-                    }
-                    await ChatClient.sendMessageTo(chatSessionId, data.filePath, 'Voice');
-                    
-                } catch (err) {
-                    // Check if error is due to session expiration
-                    if (err.message && (err.message.includes('expired') || err.message.includes('session'))) {
-                        handleSessionExpired();
-                        alert('Your chat session has expired. Please refresh the page to start a new session.');
-                    } else {
-                        alert('Voice upload failed: ' + err.message);
-                    }
-                } finally {
-                    if (!sessionExpired) {
-                        sendBtn.disabled = false;
-                    }
-                }
-            }
             
             // Start New Chat Session button (when session expires)
             const startNewSessionBtn = document.getElementById('startNewSessionBtn');
@@ -1090,7 +972,7 @@
                 // Register SessionEnded handler
                 ChatClient.onSessionEnded(function(data) {
                     if (data.chatSessionId === chatSessionId) {
-                        handleSessionExpired();
+                        handleSessionExpired(data.reason);
                     }
                 });
                 

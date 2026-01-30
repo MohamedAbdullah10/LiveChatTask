@@ -331,6 +331,25 @@
     border-bottom-right-radius: 4px;
 }
 
+.message-system {
+    justify-content: center;
+    margin: 0.75rem 0;
+}
+
+.message-system-content {
+    max-width: 85%;
+}
+
+.message-system-text {
+    margin: 0;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    color: #6b7280;
+    text-align: center;
+    background: #f3f4f6;
+    border-radius: 12px;
+}
+
 .message-text {
     margin: 0;
     line-height: 1.5;

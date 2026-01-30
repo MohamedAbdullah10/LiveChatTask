@@ -65,10 +65,11 @@ var ChatClient = (function () {
                 }
             });
 
-            connection.on("SessionEnded", function (chatSessionId) {
+            connection.on("SessionEnded", function (chatSessionId, reason) {
                 if (typeof sessionEndedHandler === "function") {
                     sessionEndedHandler({
-                        chatSessionId
+                        chatSessionId,
+                        reason: reason || "DurationExpired"
                     });
                 }
             });

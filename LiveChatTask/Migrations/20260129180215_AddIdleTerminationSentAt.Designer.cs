@@ -4,6 +4,7 @@ using LiveChatTask.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LiveChatTask.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260129180215_AddIdleTerminationSentAt")]
+    partial class AddIdleTerminationSentAt
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -146,7 +149,7 @@ namespace LiveChatTask.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ChatSessions", (string)null);
+                    b.ToTable("ChatSessions");
                 });
 
             modelBuilder.Entity("LiveChatTask.Models.ChatSettings", b =>
@@ -171,7 +174,7 @@ namespace LiveChatTask.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ChatSettings", (string)null);
+                    b.ToTable("ChatSettings");
                 });
 
             modelBuilder.Entity("LiveChatTask.Models.Message", b =>
@@ -208,7 +211,7 @@ namespace LiveChatTask.Migrations
 
                     b.HasIndex("SenderId");
 
-                    b.ToTable("Messages", (string)null);
+                    b.ToTable("Messages");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>

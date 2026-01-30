@@ -20,6 +20,10 @@ namespace LiveChatTask.Services
         Task<IReadOnlyList<int>> MarkMessagesAsSeenAsync(string chatSessionKey, string viewerId, string viewerRole);
 
         Task<ChatSession?> GetSessionInfoAsync(string chatSessionKey, string requesterId, string requesterRole);
+
+        Task<IReadOnlyList<string>> GetSessionKeysForIdleTerminationAsync();
+
+        Task<IdleTerminationResult?> SendIdleTerminationIfNeededAsync(string sessionKey);
     }
 }
 

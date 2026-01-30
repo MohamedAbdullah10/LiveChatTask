@@ -2,8 +2,10 @@ using LiveChatTask.Data;
 using LiveChatTask.Hubs;
 using LiveChatTask.Models;
 using LiveChatTask.Services;
+using LiveChatTask.Swagger;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,6 +35,7 @@ builder.Services.AddScoped<IChatSettingsService, ChatSettingsService>();
 builder.Services.AddScoped<IPresenceService, PresenceService>();
 builder.Services.AddScoped<IFileUploadService, FileUploadService>();
 builder.Services.AddHostedService<PresenceMonitor>();
+builder.Services.AddHostedService<IdleChatMonitor>();
 
 // Configure authentication cookie paths for login/access denied redirects
 builder.Services.ConfigureApplicationCookie(options =>
@@ -42,11 +45,19 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.HttpOnly = true;
     options.SlidingExpiration = true;
 });
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(options => {
+    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+
+});
 builder.Services.AddRazorPages();
 builder.Services.AddSignalR();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "LiveChat API", Version = "v1" });
+    c.CustomSchemaIds(type => type.FullName?.Replace("+", ".") ?? type.Name);
+    //c.SchemaFilter<SwaggerExcludeEntitySchemaFilter>();
+});
 var app = builder.Build();
 
 // Seed Database
@@ -65,6 +76,7 @@ using (var scope = app.Services.CreateScope())
 // 2. Configure Middleware
 if (app.Environment.IsDevelopment())
 {
+    app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
@@ -80,7 +92,14 @@ else
 
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+
+var staticFileOptions = new StaticFileOptions();
+var contentTypeProvider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
+contentTypeProvider.Mappings[".webm"] = "audio/webm";
+contentTypeProvider.Mappings[".weba"] = "audio/webm";
+contentTypeProvider.Mappings[".ogg"] = "audio/ogg";
+staticFileOptions.ContentTypeProvider = contentTypeProvider;
+app.UseStaticFiles(staticFileOptions);
 
 app.UseRouting();
 

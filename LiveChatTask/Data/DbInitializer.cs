@@ -18,7 +18,7 @@ namespace LiveChatTask.Data
             // ========================
             // 1?? Roles
             // ========================
-            string[] roles = new[] { "Admin", "User" };
+            string[] roles = new[] { "Admin", "User", "System" };
             foreach (var role in roles)
             {
                 if (!await roleManager.RoleExistsAsync(role))
@@ -66,10 +66,28 @@ namespace LiveChatTask.Data
                 }
             }
 
+            // ========================
+            // 4) Seed System user (for idle termination messages)
+            // ========================
+            string systemEmail = "system@livechat.internal";
+            var systemUser = await userManager.FindByEmailAsync(systemEmail);
+            if (systemUser == null)
+            {
+                systemUser = new ApplicationUser
+                {
+                    UserName = "system",
+                    Email = systemEmail,
+                    Role = "System",
+                    EmailConfirmed = true,
+                };
+                await userManager.CreateAsync(systemUser, "SystemPassword1!");
+                await userManager.AddToRoleAsync(systemUser, "System");
+            }
+
             await context.SaveChangesAsync();
 
             // ========================
-            // 4) Seed ChatSettings (singleton)
+            // 5) Seed ChatSettings (singleton)
             // ========================
             var settings = await context.ChatSettings.FirstOrDefaultAsync();
             if (settings == null)

@@ -321,8 +321,10 @@ namespace LiveChatTask.Services
 
             _context.Messages.Add(message);
 
-            // TODO: when implementing idle timeout, update LastUserMessageAt here for user messages
-            // and use it to trigger automatic termination warnings.
+            if (command.Role == "User")
+            {
+                chatSession.LastUserMessageAt = DateTime.UtcNow;
+            }
 
             await _context.SaveChangesAsync();
 
@@ -522,6 +524,76 @@ namespace LiveChatTask.Services
             await _context.SaveChangesAsync();
 
             return chatSession;
+        }
+
+        public async Task<IReadOnlyList<string>> GetSessionKeysForIdleTerminationAsync()
+        {
+            var cutoff = DateTime.UtcNow.AddMinutes(-1);
+            var sessionKeys = await _context.ChatSessions
+                .Where(cs => cs.IsActive
+                    && cs.IdleTerminationSentAt == null
+                    && cs.LastUserMessageAt < cutoff)
+                .OrderBy(cs => cs.LastUserMessageAt)
+                .Take(20)
+                .Select(cs => cs.SessionKey)
+                .ToListAsync();
+            return sessionKeys;
+        }
+
+        public async Task<IdleTerminationResult?> SendIdleTerminationIfNeededAsync(string sessionKey)
+        {
+            if (string.IsNullOrWhiteSpace(sessionKey))
+            {
+                return null;
+            }
+
+            var chatSession = await _context.ChatSessions
+                .FirstOrDefaultAsync(cs => cs.SessionKey == sessionKey);
+
+            if (chatSession == null || !chatSession.IsActive || chatSession.IdleTerminationSentAt != null)
+            {
+                return null;
+            }
+
+            var cutoff = DateTime.UtcNow.AddMinutes(-1);
+            if (chatSession.LastUserMessageAt >= cutoff)
+            {
+                return null;
+            }
+
+            var systemUser = await _context.Set<ApplicationUser>()
+                .FirstOrDefaultAsync(u => u.Role == "System");
+            if (systemUser == null)
+            {
+                return null;
+            }
+
+            const string content = "The chat will be terminated because we have not received a response from you.";
+            var now = DateTime.UtcNow;
+
+            var message = new Message
+            {
+                SenderId = systemUser.Id,
+                ChatSessionId = chatSession.Id,
+                Content = content,
+                Type = MessageType.System,
+                IsSeen = false,
+                CreatedAt = now
+            };
+
+            _context.Messages.Add(message);
+            chatSession.IdleTerminationSentAt = now;
+            chatSession.IsActive = false;
+            await _context.SaveChangesAsync();
+
+            return new IdleTerminationResult
+            {
+                SessionKey = chatSession.SessionKey,
+                MessageId = message.Id,
+                Content = content,
+                CreatedAt = now,
+                SenderId = systemUser.Id
+            };
         }
     }
 }
