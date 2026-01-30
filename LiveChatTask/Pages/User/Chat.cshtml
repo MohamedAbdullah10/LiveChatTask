@@ -925,7 +925,7 @@
                 } catch (err) {
                     // Check if error is due to session expiration
                     if (err.message && (err.message.includes('expired') || err.message.includes('session'))) {
-                        handleSessionExpired();
+                        handleSessionExpired('DurationExpired');
                         alert('Your chat session has expired. Please refresh the page to start a new session.');
                     } else {
                         alert('Failed to send: ' + err.message);
