@@ -31,9 +31,11 @@
 /* Hero Section */
 .hero-section {
     min-height: 100vh;
+    min-height: 100dvh;
     background: var(--gradient-hero);
     position: relative;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     display: flex;
     align-items: center;
     padding: 80px 0;
@@ -363,23 +365,98 @@
 
 @media (max-width: 767px) {
     .hero-section {
-        padding: 60px 0;
+        padding: 48px 0 60px;
     }
     
     .hero-title {
-        font-size: 2rem;
+        font-size: 1.75rem;
+        line-height: 1.25;
+    }
+    
+    .hero-subtitle {
+        font-size: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .portal-card {
+        padding: 1.5rem;
+    }
+    
+    .portal-title {
+        font-size: 1.5rem;
+    }
+    
+    .portal-description {
+        font-size: 0.95rem;
+        margin-bottom: 1.5rem;
     }
     
     .portal-icon {
-        width: 60px;
-        height: 60px;
+        width: 64px;
+        height: 64px;
         font-size: 2rem;
+        margin-bottom: 1rem;
+    }
+    
+    .glass-card {
+        padding: 1.5rem;
     }
     
     .btn-modern {
         width: 100%;
         text-align: center;
+        min-height: 48px;
+        padding: 14px 24px;
     }
+    
+    .feature-badge {
+        font-size: 0.85rem;
+        padding: 6px 16px;
+    }
+    
+    .d-flex.gap-3.mt-4 {
+        flex-direction: column;
+    }
+    
+    .d-flex.gap-3.mt-4 .btn-modern {
+        width: 100%;
+    }
+    
+    .portal-card .d-flex.gap-3 {
+        flex-direction: column;
+    }
+    
+    .portal-card .d-flex.gap-3 .btn-modern {
+        width: 100%;
+    }
+}
+
+/* Extra small: prevent overflow, larger touch targets */
+@media (max-width: 575px) {
+    .hero-section {
+        padding: 32px 0 48px;
+    }
+    
+    .hero-title {
+        font-size: 1.5rem;
+    }
+    
+    .portal-card {
+        padding: 1.25rem;
+    }
+    
+    .portal-title {
+        font-size: 1.35rem;
+    }
+    
+    .feature-item {
+        font-size: 0.9rem;
+        padding: 10px 0;
+    }
+    
+    .shape-1 { width: 180px; height: 180px; }
+    .shape-2 { width: 120px; height: 120px; }
+    .shape-3 { width: 100px; height: 100px; }
 }
 
 /* Fade In Animation */

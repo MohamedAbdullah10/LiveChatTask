@@ -1,4 +1,4 @@
-namespace LiveChatTask.Application.Chat
+namespace LiveChatTask.Contracts.Chat
 {
     /// <summary>
     /// Result of sending an idle termination message; used by IdleChatMonitor to broadcast via SignalR.

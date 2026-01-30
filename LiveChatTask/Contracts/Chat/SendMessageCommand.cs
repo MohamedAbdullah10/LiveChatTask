@@ -1,10 +1,7 @@
-using LiveChatTask.Models;
-
-namespace LiveChatTask.Application.Chat
+namespace LiveChatTask.Contracts.Chat
 {
     /// <summary>
-    /// Application-layer command for sending a chat message.
-    /// No web/HTTP types here.
+    /// Command for sending a chat message (used by service layer).
     /// </summary>
     public class SendMessageCommand
     {
@@ -12,7 +9,6 @@ namespace LiveChatTask.Application.Chat
         public string SenderId { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty; // "Admin" or "User"
         public string Content { get; set; } = string.Empty;
-        public MessageType MessageType { get; set; } = MessageType.Text;
+        public string MessageType { get; set; } = "Text";
     }
 }
-

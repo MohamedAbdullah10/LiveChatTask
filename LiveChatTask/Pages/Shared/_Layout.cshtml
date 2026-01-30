@@ -15,7 +15,7 @@
 
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
-<body class="d-flex flex-column min-vh-100">
+<body class="d-flex flex-column min-vh-100 @(ViewData["BodyClass"] ?? "")">
     <header>
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
             <div class="container-fluid">
@@ -80,8 +80,8 @@
         </nav>
     </header>
 
-    <main role="main" class="flex-fill">
-        <div class="container py-4">
+    <main role="main" class="flex-fill overflow-x-hidden">
+        <div class="container py-3 py-md-4 px-2 px-md-3">
             @RenderBody()
         </div>
     </main>

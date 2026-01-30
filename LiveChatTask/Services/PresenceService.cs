@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using LiveChatTask.Application.Presence;
+using LiveChatTask.Contracts.Presence;
 using LiveChatTask.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using LiveChatTask.Application.Presence;
+using LiveChatTask.Contracts.Presence;
 
 namespace LiveChatTask.Services
 {

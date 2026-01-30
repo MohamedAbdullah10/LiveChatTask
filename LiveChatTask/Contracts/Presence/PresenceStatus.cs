@@ -1,4 +1,4 @@
-namespace LiveChatTask.Application.Presence
+namespace LiveChatTask.Contracts.Presence
 {
     public enum PresenceStatus
     {
@@ -7,4 +7,3 @@ namespace LiveChatTask.Application.Presence
         Offline
     }
 }
-

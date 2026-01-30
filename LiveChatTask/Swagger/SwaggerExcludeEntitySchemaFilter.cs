@@ -16,7 +16,7 @@ namespace LiveChatTask.Swagger
             typeof(ApplicationUser),
             typeof(Microsoft.AspNetCore.Identity.IdentityUser),
             typeof(Microsoft.AspNetCore.Identity.IdentityRole),
-            typeof(LiveChatTask.Application.Chat.SendMessageResult)
+            typeof(LiveChatTask.Contracts.Chat.SendMessageResult)
         };
 
         public void Apply(OpenApiSchema schema, SchemaFilterContext context)

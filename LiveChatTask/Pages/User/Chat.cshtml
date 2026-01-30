@@ -2,6 +2,7 @@
 @model LiveChatTask.Pages.User.ChatModel
 @{
     ViewData["Title"] = "Chat with Support";
+    ViewData["BodyClass"] = "user-chat-page";
 }
 
 <link rel="stylesheet" href="~/css/user-chat.css" />
@@ -50,7 +51,7 @@
     <div id="expiredSessionBanner" class="expired-session-banner d-none">
         <div class="expired-banner-content">
             <span class="expired-icon">⏰</span>
-            <p class="expired-text">Your chat session has expired.</p>
+            <p id="expiredSessionBannerText" class="expired-text">Your chat session has expired.</p>
             <button type="button" id="startNewSessionBtn" class="start-new-session-btn">Start New Chat Session</button>
         </div>
     </div>
@@ -446,6 +447,12 @@
                     : 'Your chat session has expired.';
                 const titleText = isIdleTerminated ? 'Chat Terminated' : 'Session Expired';
                 
+                // Set banner text first (by id so it always updates) then show banner
+                const bannerTextEl = document.getElementById('expiredSessionBannerText');
+                if (bannerTextEl) {
+                    bannerTextEl.textContent = bannerMessage;
+                }
+                
                 // Show expiration message in chat area (with id so we can remove it when starting new session)
                 const messagesList = document.getElementById('messagesList');
                 if (messagesList && !document.getElementById('expiredSessionMessage')) {
@@ -456,13 +463,9 @@
                     messagesList.appendChild(expiredMsg);
                 }
                 
-                // Show expired session banner and set text by reason
+                // Show expired session banner
                 const banner = document.getElementById('expiredSessionBanner');
                 if (banner) {
-                    const bannerText = banner.querySelector('.expired-text');
-                    if (bannerText) {
-                        bannerText.textContent = bannerMessage;
-                    }
                     banner.classList.remove('d-none');
                 }
             }

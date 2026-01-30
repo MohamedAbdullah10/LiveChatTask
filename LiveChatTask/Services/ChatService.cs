@@ -2,17 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using LiveChatTask.Application.Chat;
+using LiveChatTask.Contracts.Chat;
 using LiveChatTask.Data;
 using LiveChatTask.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace LiveChatTask.Services
 {
-    /// <summary>
-    /// Handles chat-related business logic: validation, session resolution and message persistence.
-    /// Broadcasting is handled by the API controller via SignalR hub.
-    /// </summary>
+  
     public class ChatService : IChatService
     {
         private readonly AppDbContext _context;
@@ -29,7 +26,6 @@ namespace LiveChatTask.Services
             var now = DateTime.UtcNow;
             var defaultMaxDurationMinutes = await _settingsService.GetMaxSessionDurationMinutesAsync();
 
-            // Prefer an existing session already assigned to this admin; otherwise allow claiming an unassigned session.
             var existing = await _context.ChatSessions
                 .FirstOrDefaultAsync(cs =>
                     cs.IsActive &&
@@ -48,20 +44,18 @@ namespace LiveChatTask.Services
                     existing.AdminId = adminId;
                 }
 
-                // Update MaxDurationMinutes to match current setting (admin may have changed it)
                 if (existing.MaxDurationMinutes != defaultMaxDurationMinutes)
                 {
                     existing.MaxDurationMinutes = defaultMaxDurationMinutes;
                 }
 
-                // Ensure StartedAt is set
+           
                 if (existing.StartedAt == default || existing.StartedAt == DateTime.MinValue)
                 {
                     existing.StartedAt = existing.CreatedAt > now ? now : existing.CreatedAt;
                 }
 
-                // Don't reset expired sessions automatically - let expiration be enforced
-                // The expiration will be checked in SendMessageAsync and GetSessionInfoAsync
+              
                 await _context.SaveChangesAsync();
                 return existing;
             }
@@ -159,7 +153,7 @@ namespace LiveChatTask.Services
             return session;
         }
 
-        public async Task<IReadOnlyList<ChatSessionSummaryModel>> GetAdminSessionsAsync(string adminId)
+        public async Task<IReadOnlyList<ChatSessionSummaryResponse>> GetAdminSessionsAsync(string adminId)
         {
             // Return all users with any active session (assigned to this admin or unassigned).
             // This supports an inbox-like list where admin can click a user to open/claim the chat.
@@ -185,8 +179,7 @@ namespace LiveChatTask.Services
                 })
                 .ToListAsync();
 
-            // Unread = messages in session not seen and not sent by admin.
-            // (Lightweight; can be optimized later.)
+          
             var sessionIds = sessions.Select(s => s.Id).ToList();
             var unreadByUser = await _context.Messages
                 .Where(m => sessionIds.Contains(m.ChatSessionId) && !m.IsSeen && m.SenderId != adminId)
@@ -199,7 +192,7 @@ namespace LiveChatTask.Services
                 var session = sessions.FirstOrDefault(s => s.UserId == u.Id);
                 var unread = unreadByUser.FirstOrDefault(x => x.UserId == u.Id)?.Count ?? 0;
 
-                return new ChatSessionSummaryModel
+                return new ChatSessionSummaryResponse
                 {
                     UserId = u.Id,
                     UserNameOrEmail = u.NameOrEmail,
@@ -260,8 +253,7 @@ namespace LiveChatTask.Services
                 throw new ArgumentException("Chat session not found.", nameof(command));
             }
 
-            // Authorization: users can only access their own sessions; admins can only access sessions assigned to them,
-            // or claim unassigned sessions when they first open them.
+            
             if (command.Role == "User" && chatSession.UserId != command.SenderId)
             {
                 throw new UnauthorizedAccessException();
@@ -279,26 +271,26 @@ namespace LiveChatTask.Services
                 }
             }
 
-            // Check session duration for User messages (admins can always send)
+       
             if (command.Role == "User")
             {
-                // Ensure StartedAt is set (for existing sessions created before this feature)
+              
                 if (chatSession.StartedAt == default)
                 {
                     chatSession.StartedAt = chatSession.CreatedAt;
                 }
 
-                // Always use the CURRENT setting value (admin may have changed it)
+             
                 var currentMaxDurationMinutes = await _settingsService.GetMaxSessionDurationMinutesAsync();
                 
-                // Update stored value to match current setting
+               
                 if (chatSession.MaxDurationMinutes != currentMaxDurationMinutes)
                 {
                     chatSession.MaxDurationMinutes = currentMaxDurationMinutes;
                     await _context.SaveChangesAsync();
                 }
 
-                // Check expiration using CURRENT setting value
+                
                 if (currentMaxDurationMinutes > 0)
                 {
                     var elapsedMinutes = (DateTime.UtcNow - chatSession.StartedAt).TotalMinutes;
@@ -309,12 +301,13 @@ namespace LiveChatTask.Services
                 }
             }
 
+            var messageType = Enum.TryParse<MessageType>(command.MessageType, ignoreCase: true, out var mt) ? mt : MessageType.Text;
             var message = new Message
             {
                 SenderId = command.SenderId,
                 ChatSessionId = chatSession.Id,
                 Content = command.Content,
-                Type = command.MessageType,
+                Type = messageType,
                 IsSeen = false,
                 CreatedAt = DateTime.UtcNow
             };
@@ -337,7 +330,11 @@ namespace LiveChatTask.Services
 
             return new SendMessageResult
             {
-                Message = message,
+                MessageId = message.Id,
+                CreatedAt = message.CreatedAt,
+                SenderId = message.SenderId,
+                IsSeen = message.IsSeen,
+                MessageType = message.Type.ToString(),
                 ChatSessionKey = chatSession.SessionKey,
                 Role = command.Role,
                 SessionUserId = command.Role == "User" ? chatSession.UserId : null,
@@ -345,11 +342,11 @@ namespace LiveChatTask.Services
             };
         }
 
-        public async Task<IReadOnlyList<ChatHistoryItemModel>> GetHistoryAsync(string requesterId, string requesterRole, string chatSessionKey)
+        public async Task<IReadOnlyList<ChatHistoryItemResponse>> GetHistoryAsync(string requesterId, string requesterRole, string chatSessionKey)
         {
             if (string.IsNullOrWhiteSpace(chatSessionKey))
             {
-                return Array.Empty<ChatHistoryItemModel>();
+                return Array.Empty<ChatHistoryItemResponse>();
             }
 
             if (string.IsNullOrWhiteSpace(requesterId))
@@ -367,7 +364,7 @@ namespace LiveChatTask.Services
 
             if (chatSession == null)
             {
-                return Array.Empty<ChatHistoryItemModel>();
+                return Array.Empty<ChatHistoryItemResponse>();
             }
 
             if (requesterRole == "User" && chatSession.UserId != requesterId)
@@ -387,7 +384,7 @@ namespace LiveChatTask.Services
                 .Where(m => m.ChatSessionId == chatSession.Id)
                 .OrderBy(m => m.CreatedAt)
                 .Take(100)
-                .Select(m => new ChatHistoryItemModel
+                .Select(m => new ChatHistoryItemResponse
                 {
                     Id = m.Id,
                     Content = m.Content,
@@ -395,7 +392,7 @@ namespace LiveChatTask.Services
                     IsSeen = m.IsSeen,
                     Role = m.Sender.Role,
                     SenderId = m.SenderId,
-                    MessageType = m.Type
+                    MessageType = m.Type.ToString()
                 })
                 .ToListAsync();
 
@@ -518,9 +515,7 @@ namespace LiveChatTask.Services
                 chatSession.StartedAt = chatSession.CreatedAt > now ? now : chatSession.CreatedAt;
             }
 
-            // Don't reset StartedAt here - let the expiration stand
-            // The expiration check is done in the controller/UI
-            // Save any changes (MaxDurationMinutes update)
+          
             await _context.SaveChangesAsync();
 
             return chatSession;

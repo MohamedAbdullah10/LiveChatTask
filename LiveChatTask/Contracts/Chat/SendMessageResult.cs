@@ -1,10 +1,15 @@
-using LiveChatTask.Models;
-
-namespace LiveChatTask.Application.Chat
+namespace LiveChatTask.Contracts.Chat
 {
+    /// <summary>
+    /// Result of sending a message (DTO; no domain entity reference).
+    /// </summary>
     public class SendMessageResult
     {
-        public Message Message { get; set; } = new Message();
+        public int MessageId { get; set; }
+        public System.DateTime CreatedAt { get; set; }
+        public string SenderId { get; set; } = string.Empty;
+        public bool IsSeen { get; set; }
+        public string MessageType { get; set; } = "Text";
         public string ChatSessionKey { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty;
         /// <summary>When sender is User, set to session's UserId for admin unread broadcast.</summary>
@@ -13,4 +18,3 @@ namespace LiveChatTask.Application.Chat
         public int? UnreadCountForAdmin { get; set; }
     }
 }
-

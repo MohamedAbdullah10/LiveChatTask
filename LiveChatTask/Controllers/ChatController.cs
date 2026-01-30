@@ -1,7 +1,6 @@
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using LiveChatTask.Application.Chat;
 using LiveChatTask.Contracts.Chat;
 using LiveChatTask.Hubs;
 using LiveChatTask.Models;
@@ -64,28 +63,25 @@ namespace LiveChatTask.Controllers
                     ? await _settingsService.GetMaxUserMessageLengthAsync()
                     : 5000;
 
-                var messageType = Enum.TryParse<MessageType>(request.MessageType, ignoreCase: true, out var mt) ? mt : MessageType.Text;
-
                 var command = new SendMessageCommand
                 {
                     ChatSessionId = request.ChatSessionId,
                     SenderId = senderId,
                     Role = role,
                     Content = request.Text,
-                    MessageType = messageType
+                    MessageType = request.MessageType
                 };
 
                 var result = await _chatService.SendMessageAsync(command, maxLen);
-                var message = result.Message;
                 var chatSessionKey = result.ChatSessionKey;
 
-                var sentAt = message.CreatedAt.ToString("o");
-                var userId = message.SenderId;
-                var status = message.IsSeen ? "Seen" : "Sent";
+                var sentAt = result.CreatedAt.ToString("o");
+                var userId = result.SenderId;
+                var status = result.IsSeen ? "Seen" : "Sent";
 
                 // Broadcast using persisted message type (single source of truth).
                 await _hubContext.Clients.Group(chatSessionKey)
-                    .SendAsync("ReceiveMessage", chatSessionKey, message.Id, userId, request.Text, message.Type.ToString(), role, sentAt, status);
+                    .SendAsync("ReceiveMessage", chatSessionKey, result.MessageId, userId, request.Text, result.MessageType, role, sentAt, status);
 
                 // When a user sends a message, notify admin clients so notification badges update in real time.
                 if (role == "User" && !string.IsNullOrEmpty(result.SessionUserId) && result.UnreadCountForAdmin.HasValue)
@@ -96,7 +92,7 @@ namespace LiveChatTask.Controllers
 
                 return Ok(new
                 {
-                    messageId = message.Id,
+                    messageId = result.MessageId,
                     chatSessionId = chatSessionKey,
                     sentAt,
                     status = "Sent"
@@ -258,17 +254,7 @@ namespace LiveChatTask.Controllers
                 }
 
                 var items = await _chatService.GetHistoryAsync(requesterId, GetRole(), chatSessionId);
-                var response = items.Select(x => new ChatHistoryItemResponse
-                {
-                    Id = x.Id,
-                    Content = x.Content,
-                    CreatedAt = x.CreatedAt,
-                    IsSeen = x.IsSeen,
-                    Role = x.Role,
-                    SenderId = x.SenderId,
-                    MessageType = x.MessageType.ToString()
-                });
-                return Ok(response);
+                return Ok(items);
             }
             catch (UnauthorizedAccessException)
             {

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using LiveChatTask.Application.Chat;
+using LiveChatTask.Contracts.Chat;
 using LiveChatTask.Models;
 
 namespace LiveChatTask.Services
@@ -11,11 +11,11 @@ namespace LiveChatTask.Services
 
         Task<ChatSession> GetOrCreateUserSessionAsync(string userId);
 
-        Task<IReadOnlyList<ChatSessionSummaryModel>> GetAdminSessionsAsync(string adminId);
+        Task<IReadOnlyList<ChatSessionSummaryResponse>> GetAdminSessionsAsync(string adminId);
 
         Task<SendMessageResult> SendMessageAsync(SendMessageCommand command, int maxMessageLength);
 
-        Task<IReadOnlyList<ChatHistoryItemModel>> GetHistoryAsync(string requesterId, string requesterRole, string chatSessionKey);
+        Task<IReadOnlyList<ChatHistoryItemResponse>> GetHistoryAsync(string requesterId, string requesterRole, string chatSessionKey);
 
         Task<IReadOnlyList<int>> MarkMessagesAsSeenAsync(string chatSessionKey, string viewerId, string viewerRole);
 

@@ -1,5 +1,12 @@
+/* ==============================
+   Global responsive base
+   ============================== */
 html {
   font-size: 14px;
+  position: relative;
+  min-height: 100%;
+  -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
 }
 
 @media (min-width: 768px) {
@@ -8,17 +15,62 @@ html {
   }
 }
 
+body {
+  margin-bottom: 60px;
+  overflow-x: hidden;
+}
+
+/* Touch targets: min 44px for mobile usability */
+@media (max-width: 767px) {
+  .btn, .nav-link, button[type="button"], a.btn {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.5rem 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .navbar .navbar-nav .nav-link {
+    padding: 0.75rem 1rem;
+  }
+}
+
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
   box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
 }
 
-html {
-  position: relative;
-  min-height: 100%;
+/* Container padding for mobile */
+@media (max-width: 575px) {
+  main .container {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
 }
 
-body {
-  margin-bottom: 60px;
+/* Full-bleed container for chat pages (no max-width, no horizontal padding) */
+body.user-chat-page main,
+body.admin-chat-page main {
+  padding: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+body.user-chat-page main .container,
+body.admin-chat-page main .container {
+  max-width: none;
+  padding: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+body.user-chat-page .chat-container,
+body.admin-chat-page .admin-page-wrap {
+  flex: 1;
+  min-height: 0;
 }
 
 /* ==============================
