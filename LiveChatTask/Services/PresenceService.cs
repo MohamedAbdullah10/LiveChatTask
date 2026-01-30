@@ -10,19 +10,16 @@ using Microsoft.Extensions.Configuration;
 
 namespace LiveChatTask.Services
 {
-    /// <summary>
-    /// Presence business logic and persistence. No SignalR hub logic here.
-    /// Broadcasting is done by the PresenceMonitor/Controller.
-    /// </summary>
+    // Tracks online/idle/offline status. Broadcasting done separately by PresenceMonitor.
     public class PresenceService : IPresenceService
     {
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
 
-        // Keep last broadcasted status in-memory to detect changes efficiently.
+        // Cache last status to only broadcast when it actually changes
         private static readonly ConcurrentDictionary<string, PresenceStatus> LastKnownStatus = new();
 
-        // Ephemeral connection counts per userId (across all tabs/browsers).
+        // Count open connections per user (multi-tab support)
         private static readonly ConcurrentDictionary<string, int> ActiveConnections = new();
 
         public PresenceService(AppDbContext context, IConfiguration configuration)
@@ -37,23 +34,16 @@ namespace LiveChatTask.Services
         public async Task UpdateHeartbeatAsync(string userId, string role)
         {
             var now = DateTime.UtcNow;
-
-            // Only track presence for users and admins, but persistence is per user row.
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
             if (user == null)
-            {
                 return;
-            }
 
-            // Mark online and update last seen.
             user.IsOnline = true;
             user.LastSeen = now;
 
-            // Keep Role column consistent if needed
+            // Sync role if it drifted (shouldn't happen, but defensive)
             if (!string.IsNullOrWhiteSpace(role) && user.Role != role)
-            {
                 user.Role = role;
-            }
 
             await _context.SaveChangesAsync();
         }
@@ -64,27 +54,18 @@ namespace LiveChatTask.Services
             var offlineCutoff = now.AddSeconds(-OfflineSeconds);
             var idleCutoff = now.AddSeconds(-IdleSeconds);
 
-            // If no recent heartbeat at all, treat as Offline regardless of connections.
+            // No heartbeat in too long = definitely offline
             if (lastSeenUtc < offlineCutoff)
             {
-                // Clean up any stale connection entries.
                 ActiveConnections.TryRemove(userId, out _);
                 return PresenceStatus.Offline;
             }
 
-            // If we know they still have active connections, refine using idle threshold.
+            // Has active connections? Check if idle based on last activity
             if (ActiveConnections.TryGetValue(userId, out var connections) && connections > 0)
-            {
-                if (lastSeenUtc < idleCutoff)
-                {
-                    return PresenceStatus.Idle;
-                }
+                return lastSeenUtc < idleCutoff ? PresenceStatus.Idle : PresenceStatus.Online;
 
-                return PresenceStatus.Online;
-            }
-
-            // No active connections and lastSeen is still within offline window:
-            // we consider the user Offline because there are no open sessions.
+            // Within timeout but no connections = closed all tabs
             return PresenceStatus.Offline;
         }
 
@@ -131,9 +112,7 @@ namespace LiveChatTask.Services
         public Task ConnectionOpenedAsync(string userId)
         {
             if (string.IsNullOrWhiteSpace(userId))
-            {
                 return Task.CompletedTask;
-            }
 
             ActiveConnections.AddOrUpdate(userId, 1, (_, current) => current + 1);
             return Task.CompletedTask;
@@ -142,20 +121,14 @@ namespace LiveChatTask.Services
         public Task ConnectionClosedAsync(string userId)
         {
             if (string.IsNullOrWhiteSpace(userId))
-            {
                 return Task.CompletedTask;
-            }
 
             if (ActiveConnections.TryGetValue(userId, out var current))
             {
                 if (current <= 1)
-                {
                     ActiveConnections.TryRemove(userId, out _);
-                }
                 else
-                {
                     ActiveConnections[userId] = current - 1;
-                }
             }
 
             return Task.CompletedTask;

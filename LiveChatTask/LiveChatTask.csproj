@@ -24,7 +24,6 @@
     <Folder Include="Data\" />
     <Folder Include="Hubs\" />
     <Folder Include="Pages\Admin\" />
-    <Folder Include="Pages\Chat\" />
     <Folder Include="Pages\Shared\" />
     <Folder Include="Services\" />
     <Folder Include="wwwroot\js\" />

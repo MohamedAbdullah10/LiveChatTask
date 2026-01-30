@@ -11,10 +11,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace LiveChatTask.Controllers
 {
-    /// <summary>
-    /// API controller responsible for coordinating chat service and broadcasting via SignalR.
-    /// SignalR hub is used only for real-time delivery; business logic lives in IChatService.
-    /// </summary>
+    // Chat API - persists via IChatService, broadcasts via SignalR
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
@@ -38,13 +35,8 @@ namespace LiveChatTask.Controllers
         }
 
         private string? GetUserId() => User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
         private string GetRole() => User.IsInRole("Admin") ? "Admin" : "User";
 
-        /// <summary>
-        /// Sends a message in a chat session: delegates to IChatService and broadcasts via SignalR.
-        /// POST: /api/chat/send
-        /// </summary>
         [HttpPost("send")]
         public async Task<IActionResult> Send([FromBody] SendMessageRequest request)
         {
@@ -58,7 +50,7 @@ namespace LiveChatTask.Controllers
 
                 var role = GetRole();
 
-                // Admin-configurable limit (applies to USER messages only).
+                // Char limit only for users (admins get more room)
                 var maxLen = role == "User"
                     ? await _settingsService.GetMaxUserMessageLengthAsync()
                     : 5000;
@@ -79,11 +71,10 @@ namespace LiveChatTask.Controllers
                 var userId = result.SenderId;
                 var status = result.IsSeen ? "Seen" : "Sent";
 
-                // Broadcast using persisted message type (single source of truth).
                 await _hubContext.Clients.Group(chatSessionKey)
                     .SendAsync("ReceiveMessage", chatSessionKey, result.MessageId, userId, request.Text, result.MessageType, role, sentAt, status);
 
-                // When a user sends a message, notify admin clients so notification badges update in real time.
+                // Push unread count to admin dashboard badges
                 if (role == "User" && !string.IsNullOrEmpty(result.SessionUserId) && result.UnreadCountForAdmin.HasValue)
                 {
                     await _hubContext.Clients.Group(ChatHub.AdminPresenceGroup)
@@ -108,10 +99,8 @@ namespace LiveChatTask.Controllers
             }
             catch (InvalidOperationException ex) when (ex.Message.Contains("expired", StringComparison.OrdinalIgnoreCase))
             {
-                // Session expired (max duration) - broadcast SessionEnded with reason and return 400
-                var chatSessionKey = request.ChatSessionId;
-                await _hubContext.Clients.Group(chatSessionKey)
-                    .SendAsync("SessionEnded", chatSessionKey, "DurationExpired");
+                await _hubContext.Clients.Group(request.ChatSessionId)
+                    .SendAsync("SessionEnded", request.ChatSessionId, "DurationExpired");
                 return BadRequest(new { message = "Your chat session has expired" });
             }
             catch (UnauthorizedAccessException)
@@ -124,10 +113,7 @@ namespace LiveChatTask.Controllers
             }
         }
 
-        /// <summary>
-        /// Admin-only: returns a list of users with their current session key (chatSessionId) if exists.
-        /// GET: /api/chat/sessions
-        /// </summary>
+        // Admin inbox - all users with their session status
         [HttpGet("sessions")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Sessions()
@@ -151,10 +137,7 @@ namespace LiveChatTask.Controllers
             return Ok(response);
         }
 
-        /// <summary>
-        /// Admin-only: open (or create) a chat session for a user and return its SessionKey as chatSessionId.
-        /// POST: /api/chat/open
-        /// </summary>
+        // Opens or creates a chat session for admin to talk to a user
         [HttpPost("open")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Open([FromBody] OpenChatRequest request)
@@ -174,10 +157,7 @@ namespace LiveChatTask.Controllers
             return Ok(new { chatSessionId = session.SessionKey, userId = session.UserId });
         }
 
-        /// <summary>
-        /// User-only: gets (or creates) the current user's active session and returns its SessionKey.
-        /// GET: /api/chat/my-session
-        /// </summary>
+        // User initiates chat - creates session if needed
         [HttpGet("my-session")]
         [Authorize(Roles = "User")]
         public async Task<IActionResult> MySession()
@@ -192,10 +172,7 @@ namespace LiveChatTask.Controllers
             return Ok(new ChatSessionResponse { ChatSessionId = session.SessionKey });
         }
 
-        /// <summary>
-        /// Returns session info including duration and remaining time.
-        /// GET: /api/chat/session-info?chatSessionId=...
-        /// </summary>
+        // For countdown timers on client
         [HttpGet("session-info")]
         public async Task<IActionResult> SessionInfo([FromQuery] string chatSessionId)
         {
@@ -215,7 +192,6 @@ namespace LiveChatTask.Controllers
                     return NotFound();
                 }
 
-                // Always use the current setting value (admin may have changed it)
                 var currentMaxDurationMinutes = await _settingsService.GetMaxSessionDurationMinutesAsync();
                 
                 var now = DateTime.UtcNow;
@@ -238,10 +214,6 @@ namespace LiveChatTask.Controllers
             }
         }
 
-        /// <summary>
-        /// Returns a simple history of messages for a given chatSessionId (SessionKey).
-        /// GET: /api/chat/history?chatSessionId=...
-        /// </summary>
         [HttpGet("history")]
         public async Task<IActionResult> History([FromQuery] string chatSessionId)
         {
@@ -262,11 +234,7 @@ namespace LiveChatTask.Controllers
             }
         }
 
-        /// <summary>
-        /// Marks all unseen messages in a chat session as seen (for the viewer).
-        /// When a user views messages, they are marked as seen and admin is notified via SignalR.
-        /// POST: /api/chat/mark-seen
-        /// </summary>
+        // Read receipts - mark messages as seen and notify sender
         [HttpPost("mark-seen")]
         public async Task<IActionResult> MarkSeen([FromBody] MarkSeenRequest request)
         {
@@ -289,11 +257,10 @@ namespace LiveChatTask.Controllers
 
                 if (messageIds.Any())
                 {
-                    // Broadcast status change to all clients in this chat session group
                     await _hubContext.Clients.Group(request.ChatSessionId)
                         .SendAsync("MessageStatusChanged", request.ChatSessionId, messageIds.ToArray(), "Seen");
 
-                    // When admin marks as seen, notify admin clients to reset unread badge for this user
+                    // Reset admin dashboard badge
                     if (role == "Admin")
                     {
                         var session = await _chatService.GetSessionInfoAsync(request.ChatSessionId, viewerId, role);
@@ -321,10 +288,6 @@ namespace LiveChatTask.Controllers
             }
         }
 
-        /// <summary>
-        /// Uploads a file (image or document) for use in chat messages.
-        /// POST: /api/chat/upload-file
-        /// </summary>
         [HttpPost("upload-file")]
         public async Task<IActionResult> UploadFile( IFormFile file)
         {
@@ -356,10 +319,6 @@ namespace LiveChatTask.Controllers
             }
         }
 
-        /// <summary>
-        /// Uploads a voice recording (audio file) for use in chat messages.
-        /// POST: /api/chat/upload-voice
-        /// </summary>
         [HttpPost("upload-voice")]
         public async Task<IActionResult> UploadVoice( IFormFile file)
         {

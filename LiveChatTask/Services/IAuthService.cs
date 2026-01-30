@@ -6,9 +6,7 @@ using Microsoft.AspNetCore.Identity;
 
 namespace LiveChatTask.Services
 {
-    /// <summary>
-    /// Abstraction over ASP.NET Core Identity for authentication operations.
-    /// </summary>
+   
     public interface IAuthService
     {
         Task<IdentityResult> RegisterUserAsync(RegisterViewModel model, string role);

@@ -6,10 +6,7 @@ using Microsoft.AspNetCore.Identity;
 
 namespace LiveChatTask.Services
 {
-    /// <summary>
-    /// Concrete implementation of IAuthService using ASP.NET Core Identity.
-    /// Password hashing and validation are delegated to Identity.
-    /// </summary>
+    
     public class AuthService : IAuthService
     {
         private readonly UserManager<ApplicationUser> _userManager;
@@ -26,9 +23,6 @@ namespace LiveChatTask.Services
             _roleManager = roleManager;
         }
 
-        /// <summary>
-        /// Registers a new user with the specified role.
-        /// </summary>
         public async Task<IdentityResult> RegisterUserAsync(RegisterViewModel model, string role)
         {
             var user = new ApplicationUser
@@ -55,9 +49,7 @@ namespace LiveChatTask.Services
             return result;
         }
 
-        /// <summary>
-        /// Signs in the user using either email or username and password.
-        /// </summary>
+       
         public async Task<SignInResult> PasswordSignInAsync(string emailOrUserName, string password, bool rememberMe)
         {
             var user = await FindByEmailOrUserNameAsync(emailOrUserName);
@@ -69,10 +61,7 @@ namespace LiveChatTask.Services
             return await _signInManager.PasswordSignInAsync(user, password, rememberMe, lockoutOnFailure: false);
         }
 
-        /// <summary>
-        /// Signs in a user with "User" role validation.
-        /// Returns Failed if the account is not a User account.
-        /// </summary>
+        
         public async Task<SignInResult> UserPasswordSignInAsync(string emailOrUserName, string password, bool rememberMe)
         {
             var user = await FindByEmailOrUserNameAsync(emailOrUserName);
@@ -91,10 +80,7 @@ namespace LiveChatTask.Services
             return await _signInManager.PasswordSignInAsync(user, password, rememberMe, lockoutOnFailure: false);
         }
 
-        /// <summary>
-        /// Signs in a user with "Admin" role validation.
-        /// Returns Failed if the account is not an Admin account.
-        /// </summary>
+        
         public async Task<SignInResult> AdminPasswordSignInAsync(string emailOrUserName, string password, bool rememberMe)
         {
             var user = await FindByEmailOrUserNameAsync(emailOrUserName);
@@ -113,26 +99,18 @@ namespace LiveChatTask.Services
             return await _signInManager.PasswordSignInAsync(user, password, rememberMe, lockoutOnFailure: false);
         }
 
-        /// <summary>
-        /// Signs out the current user.
-        /// </summary>
+        
         public Task SignOutAsync() => _signInManager.SignOutAsync();
 
-        /// <summary>
-        /// Retrieves the ApplicationUser corresponding to the given ClaimsPrincipal.
-        /// </summary>
+        
         public Task<ApplicationUser?> GetCurrentUserAsync(ClaimsPrincipal principal)
             => _userManager.GetUserAsync(principal);
 
-        /// <summary>
-        /// Checks whether the specified user is in the given role.
-        /// </summary>
+       
         public Task<bool> IsInRoleAsync(ApplicationUser user, string role)
             => _userManager.IsInRoleAsync(user, role);
 
-        /// <summary>
-        /// Finds a user by email or username.
-        /// </summary>
+       
         public async Task<ApplicationUser?> FindByEmailOrUserNameAsync(string emailOrUserName)
         {
             var byEmail = await _userManager.FindByEmailAsync(emailOrUserName);

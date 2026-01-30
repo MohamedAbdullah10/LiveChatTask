@@ -9,10 +9,8 @@ using Microsoft.Extensions.Logging;
 
 namespace LiveChatTask.Services
 {
-    /// <summary>
-    /// Background monitor that detects presence changes and broadcasts them to admins.
-    /// This keeps SignalR broadcasting outside the Hub and out of business logic.
-    /// </summary>
+    // Polls for presence changes every 10s and pushes updates to admin dashboard.
+    // Keeps SignalR broadcasting out of business logic layer.
     public class PresenceMonitor : BackgroundService
     {
         public const string AdminPresenceGroup = "admins";
@@ -34,7 +32,6 @@ namespace LiveChatTask.Services
             {
                 try
                 {
-                    // Hosted services are singletons; resolve scoped dependencies via a scope.
                     using var scope = _scopeFactory.CreateScope();
                     var presenceService = scope.ServiceProvider.GetRequiredService<IPresenceService>();
 
@@ -61,8 +58,7 @@ namespace LiveChatTask.Services
                 }
                 catch (TaskCanceledException)
                 {
-                    // Expected when application is shutting down
-                    break;
+                    break; // Shutdown
                 }
             }
         }

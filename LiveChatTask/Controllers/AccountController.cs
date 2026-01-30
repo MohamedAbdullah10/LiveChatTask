@@ -9,10 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace LiveChatTask.Controllers
 {
-    /// <summary>
-    /// JSON-only API controller for authentication (login/register/logout).
-    /// Razor Pages call these endpoints via fetch.
-    /// </summary>
+   
     [ApiController]
     [Route("api/[controller]")]
     public class AccountController : ControllerBase
@@ -26,10 +23,7 @@ namespace LiveChatTask.Controllers
             _userManager = userManager;
         }
 
-        /// <summary>
-        /// Registers a new user with the \"User\" role.
-        /// POST: /api/account/register
-        /// </summary>
+       
         [HttpPost("register")]
         [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] RegisterViewModel model)
@@ -59,10 +53,7 @@ namespace LiveChatTask.Controllers
             return Ok(new { message = "Registration successful" });
         }
 
-        /// <summary>
-        /// Logs a user in and issues an auth cookie.
-        /// POST: /api/account/login
-        /// </summary>
+      
         [HttpPost("login")]
         [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] LoginViewModel model)
@@ -110,10 +101,7 @@ namespace LiveChatTask.Controllers
             });
         }
 
-        /// <summary>
-        /// Logs a USER in (validates "User" role).
-        /// POST: /api/account/user-login
-        /// </summary>
+      
         [HttpPost("user-login")]
         [AllowAnonymous]
         public async Task<IActionResult> UserLogin([FromBody] LoginViewModel model)
@@ -149,10 +137,7 @@ namespace LiveChatTask.Controllers
             });
         }
 
-        /// <summary>
-        /// Logs an ADMIN in (validates "Admin" role).
-        /// POST: /api/account/admin-login
-        /// </summary>
+        
         [HttpPost("admin-login")]
         [AllowAnonymous]
         public async Task<IActionResult> AdminLogin([FromBody] LoginViewModel model)

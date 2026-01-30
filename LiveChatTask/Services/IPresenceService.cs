@@ -9,21 +9,11 @@ namespace LiveChatTask.Services
         Task UpdateHeartbeatAsync(string userId, string role);
         Task<IReadOnlyList<(string UserId, string NameOrEmail, PresenceStatus Status, System.DateTime LastSeen)>> GetUserPresenceListAsync();
 
-        /// <summary>
-        /// Computes current presence statuses for all users and returns any changes since the last check.
-        /// This is used by the background monitor to broadcast changes to admins.
-        /// </summary>
+        // Returns only users whose status changed since last check (for efficient broadcasting)
         Task<IReadOnlyList<(string UserId, PresenceStatus Status, System.DateTime LastSeen)>> DetectPresenceChangesAsync();
 
-        /// <summary>
-        /// Notified by the SignalR hub when a connection is opened for a user.
-        /// No hub logic here; this service keeps ephemeral connection counts.
-        /// </summary>
+        // Called by ChatHub on connect/disconnect to track active tabs
         Task ConnectionOpenedAsync(string userId);
-
-        /// <summary>
-        /// Notified by the SignalR hub when a connection is closed for a user.
-        /// </summary>
         Task ConnectionClosedAsync(string userId);
     }
 }

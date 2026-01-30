@@ -9,10 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace LiveChatTask.Services
 {
-    /// <summary>
-    /// Background monitor that sends idle termination messages when the user has not responded for 1 minute.
-    /// Broadcasts the message and SessionEnded via SignalR so both Admin and User clients receive them in real time.
-    /// </summary>
+    // Auto-terminates chat if user is silent for 1 min. Runs every 30s.
     public class IdleChatMonitor : BackgroundService
     {
         private readonly IServiceScopeFactory _scopeFactory;
